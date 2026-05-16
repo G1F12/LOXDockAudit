@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -26,6 +27,22 @@ class DomainRange:
 
 
 @dataclass
+class QCConfig:
+    his_resi: list[int]
+    lys_resi: int
+    tyr_resi: int
+    disulfide_pairs: list[tuple[int, int]] = field(default_factory=list)
+    alphafold_pdb_path: str | None = None
+    pae_json_path: str | None = None
+    domain_a_resi: list[int] | None = None
+    domain_b_resi: list[int] | None = None
+    plddt_threshold: float = 70.0
+    his_max_ca_distance: float = 10.0
+    lys_tyr_max_cb_distance: float = 12.0
+    disulfide_max_sg_distance: float = 2.5
+
+
+@dataclass
 class ConstructConfig:
     construct_id: str
     construct_type: str
@@ -43,6 +60,7 @@ class ConstructConfig:
     best_productive_rank_max: int = 3
     is_inactive: bool = False
     control_type: str | None = None
+    structural_qc: QCConfig | None = None
 
 
 @dataclass
@@ -114,6 +132,21 @@ class ScreenResult:
     candidate_summary: ConstructSummary
     baseline_summary: ConstructSummary | None
     control_comparisons: list[ControlComparisonResult]
-    criteria_results: dict[str, bool]
+    criteria_results: dict[str, Any]
     overall_pass: bool
     decision_text: str
+
+
+@dataclass
+class StructuralQCResult:
+    construct_id: str
+    his_triad_pass: bool
+    lys_tyr_pass: bool
+    disulfide_pass: bool
+    active_site_accessible: bool
+    plddt_pass: bool | None
+    pae_pass: bool | None
+    fold_qc_pass: bool
+    fold_corrupted: bool
+    warnings: list[str]
+    details: dict

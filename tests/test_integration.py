@@ -55,6 +55,143 @@ def test_full_cli_pipeline(tmp_path: Path, fixture_pdb_path: Path) -> None:
     assert "## Docking Pose Summary" in report
 
 
+def test_run_cli_structural_qc_configured(tmp_path: Path, fixture_pdb_path: Path) -> None:
+    paths = _create_integration_scenario(tmp_path, fixture_pdb_path)
+    qc_config = paths["configs"] / "qc.yaml"
+    qc_config.write_text(
+        _config_yaml("test_qc", "lox_baseline", paths["baseline_models"])
+        + """
+structural_qc:
+  his_resi: [124, 126, 128]
+  lys_resi: 152
+  tyr_resi: 187
+  disulfide_pairs: []
+""",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        ["run", "--config", str(qc_config), "--out", str(paths["out"]), "--top-n", "1"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Structural QC: PASS" in result.output
+    assert "His triad:" in result.output
+    assert "Disulfide: SKIPPED" in result.output
+    qc_report = paths["out"] / "test_qc_structural_qc.md"
+    assert qc_report.exists()
+    assert "| His triad geometry |" in qc_report.read_text(encoding="utf-8")
+    report = (paths["out"] / "test_qc_report.md").read_text(encoding="utf-8")
+    assert "## Structural QC" in report
+    assert "## Structural QC: test_qc" in report
+
+
+def test_run_cli_strict_qc_exits_on_corrupted_fold(
+    tmp_path: Path,
+    fixture_pdb_path: Path,
+) -> None:
+    paths = _create_integration_scenario(tmp_path, fixture_pdb_path)
+    qc_config = paths["configs"] / "qc_fail.yaml"
+    qc_config.write_text(
+        _config_yaml("test_qc_fail", "lox_baseline", paths["baseline_models"])
+        + """
+structural_qc:
+  his_resi: [999, 998, 997]
+  lys_resi: 152
+  tyr_resi: 187
+  disulfide_pairs: []
+""",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "run",
+            "--config",
+            str(qc_config),
+            "--out",
+            str(paths["out"]),
+            "--strict-qc",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "Structural QC: FOLD CORRUPTED" in result.output
+    assert "ERROR: Structural QC failed. Use --no-strict-qc to override." in result.output
+
+
+def test_run_cli_structural_qc_bad_non_strict_warns_and_continues(
+    tmp_path: Path,
+    fixture_pdb_path: Path,
+) -> None:
+    paths = _create_integration_scenario(tmp_path, fixture_pdb_path)
+    qc_config = paths["configs"] / "qc_warn.yaml"
+    qc_config.write_text(
+        _config_yaml("test_qc_warn", "lox_baseline", paths["baseline_models"])
+        + """
+structural_qc:
+  his_resi: [999, 998, 997]
+  lys_resi: 152
+  tyr_resi: 187
+  disulfide_pairs: []
+  alphafold_pdb_path: null
+""",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        ["run", "--config", str(qc_config), "--out", str(paths["out"]), "--top-n", "1"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Structural QC: FOLD CORRUPTED" in result.output
+    assert "WARNING: Structural QC failed. Docking results may be unreliable." in result.output
+    assert "Construct: test_qc_warn" in result.output
+
+
+def test_run_cli_help_shows_strict_qc_option() -> None:
+    result = CliRunner().invoke(cli, ["run", "--help"])
+
+    assert result.exit_code == 0
+    assert "--strict-qc" in result.output
+
+
+def test_run_cli_structural_qc_uses_first_sorted_pdb_only(
+    tmp_path: Path,
+    fixture_pdb_path: Path,
+) -> None:
+    models = tmp_path / "models"
+    configs = tmp_path / "configs"
+    out = tmp_path / "out"
+    models.mkdir()
+    configs.mkdir()
+    shutil.copyfile(fixture_pdb_path, models / "model_1.pdb")
+    _write_without_residue(fixture_pdb_path, models / "model_2.pdb", residue=124)
+    qc_config = configs / "qc_first.yaml"
+    qc_config.write_text(
+        _config_yaml("test_qc_first", "lox_baseline", models)
+        + """
+structural_qc:
+  his_resi: [124, 126, 128]
+  lys_resi: 152
+  tyr_resi: 187
+  disulfide_pairs: []
+""",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        ["run", "--config", str(qc_config), "--out", str(out), "--top-n", "1"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Structural QC: PASS" in result.output
+
+
 def test_audit_screen_detects_cross_construct_duplicate(
     tmp_path: Path,
     fixture_pdb_path: Path,
@@ -154,6 +291,57 @@ def test_screen_cli_pipeline(tmp_path: Path, fixture_pdb_path: Path) -> None:
     assert (paths["out"] / "test_lox_baseline_poses.csv").exists()
     assert (paths["out"] / "test_lox_fusion_poses.csv").exists()
     assert (paths["out"] / "test_scrambled_poses.csv").exists()
+
+
+def test_screen_cli_runs_configured_structural_qc(
+    tmp_path: Path,
+    fixture_pdb_path: Path,
+) -> None:
+    paths = _create_integration_scenario(tmp_path, fixture_pdb_path)
+    qc_candidate_config = paths["configs"] / "qc_candidate.yaml"
+    qc_candidate_config.write_text(
+        _config_yaml("test_lox_fusion", "lox_fusion", paths["fusion_models"])
+        + """
+structural_qc:
+  his_resi: [124, 126, 128]
+  lys_resi: 152
+  tyr_resi: 187
+  disulfide_pairs: []
+""",
+        encoding="utf-8",
+    )
+    screen_config = paths["configs"] / "screen_qc.yaml"
+    screen_config.write_text(
+        yaml.safe_dump(
+            {
+                "screen_id": "qc_screen",
+                "candidate_construct_id": "test_lox_fusion",
+                "constructs": [
+                    {
+                        "construct_id": "test_lox_baseline",
+                        "control_type": "baseline",
+                        "config_path": str(paths["baseline_config"]),
+                    },
+                    {
+                        "construct_id": "test_lox_fusion",
+                        "control_type": "candidate",
+                        "config_path": str(qc_candidate_config),
+                    },
+                ],
+                "strict_criteria": {"must_beat_polyK": False},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        ["screen", "--config", str(screen_config), "--out", str(paths["out"]), "--top-n", "1"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Structural QC test_lox_fusion: PASS" in result.output
+    assert (paths["out"] / "test_lox_fusion_structural_qc.md").exists()
 
 
 def test_screen_cli_same_model_dir_controls(
@@ -278,6 +466,15 @@ def _write_shifted_fixture(source: Path, destination: Path, distance: float) -> 
         if line.startswith("ATOM") and line[21] == "D" and int(line[22:26]) in ACTIVE_SITE_RESI:
             line = f"{line[:30]}{distance:8.3f}{0.0:8.3f}{0.0:8.3f}{line[54:]}"
         lines.append(line)
+    destination.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_without_residue(source: Path, destination: Path, residue: int) -> None:
+    lines = [
+        line
+        for line in source.read_text(encoding="utf-8").splitlines()
+        if not (line.startswith("ATOM") and line[21] == "D" and int(line[22:26]) == residue)
+    ]
     destination.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

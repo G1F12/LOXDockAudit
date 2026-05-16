@@ -6,9 +6,9 @@ Negative-control-aware docking and productive geometry auditor for LOX-collagen 
 
 ## Current status
 
-Validated MVP, v0.2.1 reproducibility release.
+Validated MVP, v0.3.0 structural-QC release.
 
-- Unit tests: 105+ passing
+- Tests: 182 passing
 - Integration tests: passing
 - mypy: passing
 - ruff: passing

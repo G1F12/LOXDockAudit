@@ -15,7 +15,9 @@ from loxdockaudit.models import (
     ControlComparisonResult,
     PoseMetrics,
     ScreenResult,
+    StructuralQCResult,
 )
+from loxdockaudit.fold_qc import format_qc_report
 
 
 POSE_COLUMNS = [
@@ -80,6 +82,7 @@ def generate_markdown_report(
     summary: ConstructSummary,
     audit_report: str,
     baseline_summary: ConstructSummary | None = None,
+    qc_result: StructuralQCResult | None = None,
 ) -> str:
     """
     Generate a Markdown report for one construct.
@@ -98,6 +101,10 @@ def generate_markdown_report(
         "## Input Audit",
         "",
         audit_report.strip() if audit_report.strip() else "No audit report provided.",
+        "",
+        "## Structural QC",
+        "",
+        format_qc_report(qc_result).strip() if qc_result is not None else "Structural QC not configured.",
         "",
         "## Docking Pose Summary",
         "",
@@ -138,7 +145,7 @@ def generate_markdown_report(
 
 
 def save_outputs(
-    out_dir: str,
+    out_dir: str | Path,
     construct_id: str,
     pose_df: pd.DataFrame,
     summary_df: pd.DataFrame,
@@ -209,7 +216,7 @@ def generate_screen_markdown_report(
 
 
 def save_screen_outputs(
-    out_dir: str,
+    out_dir: str | Path,
     screen_id: str,
     screen_result: ScreenResult,
     control_comparison_df: pd.DataFrame,

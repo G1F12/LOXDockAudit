@@ -10,6 +10,7 @@ from loxdockaudit.models import (
     DomainRange,
     PoseMetrics,
     ScreenResult,
+    StructuralQCResult,
     TargetResidue,
 )
 from loxdockaudit.reporting import (
@@ -65,6 +66,7 @@ def test_generate_markdown_report_headers() -> None:
     for header in [
         "## Executive Decision",
         "## Input Audit",
+        "## Structural QC",
         "## Docking Pose Summary",
         "## Productive Geometry",
         "## Warnings",
@@ -80,6 +82,37 @@ def test_generate_markdown_report_pass_or_fail() -> None:
 def test_generate_markdown_report_pipe_table() -> None:
     report = generate_markdown_report(_config(), poses_to_dataframe([]), _summary(), "audit")
     assert "|" in report
+
+
+def test_generate_markdown_report_structural_qc_not_configured() -> None:
+    report = generate_markdown_report(_config(), poses_to_dataframe([]), _summary(), "audit")
+
+    assert "Structural QC not configured." in report
+
+
+def test_generate_markdown_report_includes_structural_qc_result() -> None:
+    report = generate_markdown_report(
+        _config(),
+        poses_to_dataframe([]),
+        _summary(),
+        "audit",
+        qc_result=StructuralQCResult(
+            construct_id="construct",
+            his_triad_pass=True,
+            lys_tyr_pass=True,
+            disulfide_pass=True,
+            active_site_accessible=True,
+            plddt_pass=None,
+            pae_pass=None,
+            fold_qc_pass=True,
+            fold_corrupted=False,
+            warnings=[],
+            details={"disulfide": {"skipped": True}},
+        ),
+    )
+
+    assert "## Structural QC: construct" in report
+    assert "| His triad geometry | PASS |" in report
 
 
 def test_save_outputs_creates_three_files(tmp_path: Path) -> None:

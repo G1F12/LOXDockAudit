@@ -13,7 +13,8 @@ from loxdockaudit.config import load_construct_config, load_screen_config
 from loxdockaudit.contacts import analyze_pose_contacts, compute_contact_frequencies
 from loxdockaudit.distances import active_site_to_target_distance
 from loxdockaudit.input_audit import audit_screen, format_audit_report
-from loxdockaudit.models import ConstructConfig, ConstructSummary, PoseMetrics
+from loxdockaudit.fold_qc import format_qc_report, run_structural_qc
+from loxdockaudit.models import ConstructConfig, ConstructSummary, PoseMetrics, StructuralQCResult
 from loxdockaudit.pdb_parser import load_structure
 from loxdockaudit.reporting import (
     control_comparisons_to_dataframe,
@@ -39,8 +40,9 @@ def cli() -> None:
 @click.option("--config", required=True, help="Path to construct YAML config")
 @click.option("--out", required=True, help="Output directory")
 @click.option("--top-n", default=10, help="Number of top poses to analyze")
+@click.option("--strict-qc", is_flag=True, help="Exit if structural QC fails")
 @click.option("--verbose", is_flag=True)
-def run(config: str, out: str, top_n: int, verbose: bool) -> None:
+def run(config: str, out: str, top_n: int, strict_qc: bool, verbose: bool) -> None:
     """Run a LOXDockAudit analysis."""
     try:
         construct_config = load_construct_config(config)
@@ -48,6 +50,14 @@ def run(config: str, out: str, top_n: int, verbose: bool) -> None:
             Path(construct_config.models_dir).glob("*.pdb"),
             key=lambda path: natural_sort_key(str(path)),
         )
+        qc_result = _run_configured_structural_qc(construct_config, out)
+        if qc_result is not None:
+            _print_qc_summary(qc_result)
+            if qc_result.fold_corrupted and strict_qc:
+                click.echo("ERROR: Structural QC failed. Use --no-strict-qc to override.")
+                sys.exit(1)
+            if qc_result.fold_corrupted:
+                click.echo("WARNING: Structural QC failed. Docking results may be unreliable.")
 
         audit_config = _audit_config_from_construct(construct_config)
         audit_result = audit_screen([audit_config])
@@ -120,6 +130,7 @@ def run(config: str, out: str, top_n: int, verbose: bool) -> None:
             pose_df=pose_df,
             summary=summary,
             audit_report=audit_report,
+            qc_result=qc_result,
         )
         save_outputs(
             out_dir=out,
@@ -188,6 +199,12 @@ def screen(config: str, out: str, top_n: int, verbose: bool) -> None:
 
         for entry in screen_config.constructs:
             construct_config = load_construct_config(entry.config_path)
+            qc_result = _run_configured_structural_qc(construct_config, out)
+            if qc_result is not None:
+                click.echo(
+                    f"Structural QC {entry.construct_id}: "
+                    f"{'PASS' if qc_result.fold_qc_pass else 'FOLD CORRUPTED'}"
+                )
             summary, pose_metrics = run_single_construct(
                 construct_config,
                 top_n=top_n,
@@ -239,6 +256,75 @@ def _audit_config_from_construct(construct_config: ConstructConfig) -> dict[str,
         "receptor_chains": construct_config.receptor_chains,
         "expected_n_terminus": None,
     }
+
+
+def _run_configured_structural_qc(
+    construct_config: ConstructConfig,
+    out_dir: str,
+) -> StructuralQCResult | None:
+    qc_config = construct_config.structural_qc
+    if qc_config is None:
+        return None
+
+    model_path = _first_model_path(construct_config.models_dir)
+    active_site_resi = [
+        int(residue["resi"])
+        for residue in construct_config.active_site.residues
+        if "resi" in residue
+    ]
+    qc_result = run_structural_qc(
+        pdb_path=str(model_path),
+        construct_id=construct_config.construct_id,
+        lox_chain=construct_config.ligand_chains[0],
+        his_resi=qc_config.his_resi,
+        lys_resi=qc_config.lys_resi,
+        tyr_resi=qc_config.tyr_resi,
+        disulfide_pairs=qc_config.disulfide_pairs,
+        active_site_resi=active_site_resi,
+        alphafold_pdb_path=qc_config.alphafold_pdb_path,
+        pae_json_path=qc_config.pae_json_path,
+        domain_a_resi=qc_config.domain_a_resi,
+        domain_b_resi=qc_config.domain_b_resi,
+        plddt_threshold=qc_config.plddt_threshold,
+        his_max_ca_distance=qc_config.his_max_ca_distance,
+        lys_tyr_max_cb_distance=qc_config.lys_tyr_max_cb_distance,
+        disulfide_max_sg_distance=qc_config.disulfide_max_sg_distance,
+    )
+    output_dir = Path(out_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / f"{construct_config.construct_id}_structural_qc.md").write_text(
+        format_qc_report(qc_result),
+        encoding="utf-8",
+    )
+    return qc_result
+
+
+def _first_model_path(models_dir: str) -> Path:
+    pdb_paths = sorted(
+        Path(models_dir).glob("*.pdb"),
+        key=lambda path: natural_sort_key(str(path)),
+    )
+    if not pdb_paths:
+        raise ValueError(f"No PDB files found in models_dir: {models_dir}")
+    return pdb_paths[0]
+
+
+def _print_qc_summary(qc_result: StructuralQCResult) -> None:
+    click.echo(f"Structural QC: {'PASS' if qc_result.fold_qc_pass else 'FOLD CORRUPTED'}")
+    click.echo(f"His triad: {_status(qc_result.his_triad_pass)}")
+    click.echo(f"Lys-Tyr: {_status(qc_result.lys_tyr_pass)}")
+    disulfide_result = qc_result.details.get("disulfide", {})
+    disulfide_status = "SKIPPED" if disulfide_result.get("skipped") else _status(qc_result.disulfide_pass)
+    click.echo(f"Disulfide: {disulfide_status}")
+    click.echo(f"Active-site access: {_status(qc_result.active_site_accessible)}")
+    click.echo(f"pLDDT: {_status(qc_result.plddt_pass)}")
+    click.echo(f"PAE: {_status(qc_result.pae_pass)}")
+
+
+def _status(value: bool | None) -> str:
+    if value is None:
+        return "N/A"
+    return "PASS" if value else "FAIL"
 
 
 def _configure_stdio() -> None:

@@ -28,15 +28,19 @@ def test_get_atoms_by_selection_residue_list(fixture_pdb_path: Path) -> None:
     structure = load_structure(str(fixture_pdb_path))
     atoms = get_atoms_by_selection(structure, chains=["D"], resi_list=[124])
     assert atoms
-    assert {atom.get_parent().resname for atom in atoms} == {"HIS"}
-    assert {atom.get_parent().id[1] for atom in atoms} == {124}
+    parents = [atom.get_parent() for atom in atoms]
+    assert all(parent is not None for parent in parents)
+    assert {parent.resname for parent in parents if parent is not None} == {"HIS"}
+    assert {parent.id[1] for parent in parents if parent is not None} == {124}
 
 
 def test_get_atoms_by_selection_residue_range(fixture_pdb_path: Path) -> None:
     structure = load_structure(str(fixture_pdb_path))
     atoms = get_atoms_by_selection(structure, chains=["A"], resi_range=(1, 5))
     assert atoms
-    assert {atom.get_parent().id[1] for atom in atoms} == {1, 2, 3, 4, 5}
+    parents = [atom.get_parent() for atom in atoms]
+    assert all(parent is not None for parent in parents)
+    assert {parent.id[1] for parent in parents if parent is not None} == {1, 2, 3, 4, 5}
 
 
 def test_get_atoms_by_selection_excludes_hydrogens(fixture_pdb_path: Path) -> None:

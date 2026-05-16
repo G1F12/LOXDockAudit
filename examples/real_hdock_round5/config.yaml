@@ -27,3 +27,12 @@ active_site:
     - {label: "His296", resi: 296}
     - {label: "Lys320", resi: 320}
     - {label: "Tyr355", resi: 355}
+
+structural_qc:
+  his_resi: [292, 294, 296]
+  lys_resi: 320
+  tyr_resi: 355
+  disulfide_pairs: [[238, 291], [244, 361], [324, 340], [330, 351], [398, 412]]
+  alphafold_pdb_path: null
+  pae_json_path: null
+  plddt_threshold: 70.0

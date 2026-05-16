@@ -48,6 +48,7 @@ Output saved to: examples/real_hdock_round5/expected_output
 examples/real_hdock_round5/expected_output/r5_real_lox169_poses.csv
 examples/real_hdock_round5/expected_output/r5_real_lox169_summary.csv
 examples/real_hdock_round5/expected_output/r5_real_lox169_report.md
+examples/real_hdock_round5/expected_output/r5_real_lox169_structural_qc.md
 ```
 
 ## Expected Metrics
@@ -61,6 +62,31 @@ examples/real_hdock_round5/expected_output/r5_real_lox169_report.md
 
 Expected productive ranks are 3 and 5. `model_10.pdb` must appear as rank 10 in
 the poses CSV.
+
+## Structural QC Notes
+
+Correct active-site residue numbers for this construct use full-length LOX
+numbering on chain D:
+
+- His triad: His292, His294, His296
+- LTQ precursor residues: Lys320 and Tyr355
+- Candidate disulfide pairs: Cys238-Cys291, Cys244-Cys361, Cys324-Cys340,
+  Cys330-Cys351, Cys398-Cys412
+
+QC result: PASS.
+
+Observed structural QC distances in `model_1.pdb`:
+
+- His292-His294 CA distance: 5.714 A
+- His292-His296 CA distance: 9.158 A
+- His294-His296 CA distance: 6.555 A
+- Lys320-Tyr355 CB distance: 6.775 A
+- Disulfides intact by the configured 2.5 A tolerance: 5/5
+
+Interpretation: the real Round 5 LOX169-417 model retains a plausible active-site
+arrangement before docking interpretation. The His triad is compact enough for
+the current v0.3 check (`all pairs < 10 A`), Lys320 and Tyr355 are spatially
+proximal, and the configured disulfides are present in the model.
 
 ## Interpretation
 

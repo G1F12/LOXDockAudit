@@ -12,6 +12,7 @@ from loxdockaudit.models import (
     ConstructConfig,
     ControlEntry,
     DomainRange,
+    QCConfig,
     ScreenConfig,
     StrictCriteria,
     TargetResidue,
@@ -154,6 +155,7 @@ def _construct_from_mapping(data: Any, source: str) -> ConstructConfig:
         best_productive_rank_max=int(data.get("best_productive_rank_max", 3)),
         is_inactive=bool(data.get("is_inactive", False)),
         control_type=data.get("control_type"),
+        structural_qc=_qc_config_from_mapping(data.get("structural_qc"), source=source),
     )
 
 
@@ -216,6 +218,67 @@ def _control_entry_from_mapping(
         control_type=control_type,
         config_path=str(resolved_config_path),
     )
+
+
+def _qc_config_from_mapping(data: Any, source: str) -> QCConfig | None:
+    if data is None:
+        return None
+    if not isinstance(data, dict):
+        raise ValueError(f"{source}: structural_qc must be a mapping")
+
+    missing = [field for field in ("his_resi", "lys_resi", "tyr_resi") if field not in data]
+    if missing:
+        raise ValueError(
+            f"{source}: missing required field(s) in structural_qc: "
+            f"{', '.join(missing)}"
+        )
+
+    return QCConfig(
+        his_resi=[int(resi) for resi in _list_field(data, "his_resi", source)],
+        lys_resi=int(data["lys_resi"]),
+        tyr_resi=int(data["tyr_resi"]),
+        disulfide_pairs=_disulfide_pairs_from_mapping(
+            data.get("disulfide_pairs", []),
+            source=source,
+        ),
+        alphafold_pdb_path=data.get("alphafold_pdb_path"),
+        pae_json_path=data.get("pae_json_path"),
+        domain_a_resi=(
+            [int(resi) for resi in _list_field(data, "domain_a_resi", source)]
+            if data.get("domain_a_resi") is not None
+            else None
+        ),
+        domain_b_resi=(
+            [int(resi) for resi in _list_field(data, "domain_b_resi", source)]
+            if data.get("domain_b_resi") is not None
+            else None
+        ),
+        plddt_threshold=float(data.get("plddt_threshold", 70.0)),
+        his_max_ca_distance=float(data.get("his_max_ca_distance", 10.0)),
+        lys_tyr_max_cb_distance=float(data.get("lys_tyr_max_cb_distance", 12.0)),
+        disulfide_max_sg_distance=float(data.get("disulfide_max_sg_distance", 2.5)),
+    )
+
+
+def _disulfide_pairs_from_mapping(data: Any, source: str) -> list[tuple[int, int]]:
+    if not isinstance(data, list):
+        raise ValueError(f"{source}: structural_qc.disulfide_pairs must be a list")
+
+    pairs = []
+    for index, pair in enumerate(data):
+        if not isinstance(pair, list) or len(pair) != 2:
+            raise ValueError(
+                f"{source}: structural_qc.disulfide_pairs[{index}] must be a two-item list"
+            )
+        pairs.append((int(pair[0]), int(pair[1])))
+    return pairs
+
+
+def _list_field(data: dict[str, Any], field_name: str, source: str) -> list[Any]:
+    value = data[field_name]
+    if not isinstance(value, list):
+        raise ValueError(f"{source}: structural_qc.{field_name} must be a list")
+    return value
 
 
 def _strict_criteria_from_mapping(data: Any) -> StrictCriteria:

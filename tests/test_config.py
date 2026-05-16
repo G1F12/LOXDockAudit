@@ -6,7 +6,7 @@ import pytest
 import yaml
 
 from loxdockaudit.config import load_construct_config, load_screen_config
-from loxdockaudit.models import ConstructConfig, ScreenConfig
+from loxdockaudit.models import ConstructConfig, QCConfig, ScreenConfig
 
 
 VALID_YAML = """
@@ -180,3 +180,56 @@ def test_productive_distance_threshold_default(tmp_path: Path) -> None:
     path = tmp_path / "valid.yaml"
     path.write_text(VALID_YAML, encoding="utf-8")
     assert load_construct_config(str(path)).productive_distance_threshold == 8.0
+
+
+def test_load_construct_config_structural_qc_absent_defaults_none(tmp_path: Path) -> None:
+    path = tmp_path / "valid.yaml"
+    path.write_text(VALID_YAML, encoding="utf-8")
+
+    config = load_construct_config(str(path))
+
+    assert config.structural_qc is None
+
+
+def test_load_construct_config_structural_qc_parses_optional_block(tmp_path: Path) -> None:
+    path = tmp_path / "qc.yaml"
+    path.write_text(
+        VALID_YAML
+        + """
+structural_qc:
+  his_resi: [124, 126, 128]
+  lys_resi: 152
+  tyr_resi: 187
+  disulfide_pairs: [[161, 165], [197, 210]]
+  alphafold_pdb_path: null
+  pae_json_path: null
+  plddt_threshold: 70.0
+""",
+        encoding="utf-8",
+    )
+
+    config = load_construct_config(str(path))
+
+    assert isinstance(config.structural_qc, QCConfig)
+    assert config.structural_qc.his_resi == [124, 126, 128]
+    assert config.structural_qc.lys_resi == 152
+    assert config.structural_qc.tyr_resi == 187
+    assert config.structural_qc.disulfide_pairs == [(161, 165), (197, 210)]
+    assert config.structural_qc.alphafold_pdb_path is None
+    assert config.structural_qc.pae_json_path is None
+    assert config.structural_qc.plddt_threshold == 70.0
+
+
+def test_load_construct_config_structural_qc_requires_core_fields(tmp_path: Path) -> None:
+    path = tmp_path / "qc_missing.yaml"
+    path.write_text(
+        VALID_YAML
+        + """
+structural_qc:
+  his_resi: [124, 126, 128]
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="structural_qc"):
+        load_construct_config(str(path))
