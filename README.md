@@ -103,6 +103,12 @@ lexicographic ordering.
 See [REPRODUCING_ROUND5.md](REPRODUCING_ROUND5.md) for exact commands, expected
 outputs, and expected metrics.
 
+## Technical Report
+
+A full technical report describing the method, implementation, real data results,
+and the lexicographic ordering bug discovery is available in
+[docs/technical_report.md](docs/technical_report.md).
+
 ## Limitations
 
 LOXDockAudit does not prove enzymatic activity, Cu loading, LTQ/topaquinone
