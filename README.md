@@ -77,7 +77,7 @@ Dataset: R5 LOX169-417 vs collagen-I 6VZX
 Result after numeric model sorting:
 
 - Productive poses: 2/10
-- Best distance: 6.16 A
+- Best distance: 6.159 A
 - Best productive rank: 3
 
 Real output excerpt:
