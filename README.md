@@ -1,6 +1,7 @@
 # LOXDockAudit
 
 [![CI](https://github.com/G1F12/LOXDockAudit/actions/workflows/ci.yml/badge.svg)](https://github.com/G1F12/LOXDockAudit/actions/workflows/ci.yml)
+[![DOI](https://img.shields.io/badge/DOI-pending%20Zenodo%20release-blue)]()
 
 Negative-control-aware docking and productive geometry auditor for LOX-collagen engineering.
 

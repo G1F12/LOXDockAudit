@@ -1,0 +1,34 @@
+{
+  "title": "LOXDockAudit: A Reproducible Framework for Control-Aware Productive Geometry Analysis in LOX-Collagen Docking Screens",
+  "version": "v0.3.0",
+  "description": "LOXDockAudit is a negative-control-aware computational triage tool for LOX-Collagen engineering. It analyzes docking models to determine whether LOX constructs are positioned near collagen Lys/Hyl substrate residues in potentially productive catalytic geometry, while detecting nonspecific binding, CBD trapping, invalid controls, and failure to outperform simpler baselines. Includes structural QC (His triad, Lys-Tyr, disulfide geometry, active-site accessibility), control-aware screen comparison, input auditing with SHA256 verification, and a reproducible real HDOCK Round 5 dataset (LOX169-417 vs collagen-I 6VZX).",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "MIT",
+  "keywords": [
+    "lysyl oxidase",
+    "collagen",
+    "protein engineering",
+    "docking",
+    "structural biology",
+    "bioinformatics",
+    "reproducibility",
+    "enzyme engineering",
+    "ECM",
+    "HDOCK"
+  ],
+  "creators": [
+    {
+      "name": "Karatseyeu, Aliaksandr",
+      "affiliation": "Independent Researcher"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/G1F12/LOXDockAudit",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ],
+  "language": "eng"
+}
