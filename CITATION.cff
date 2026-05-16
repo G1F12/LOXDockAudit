@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use LOXDockAudit, please cite this software."
+title: "LOXDockAudit: A Reproducible Framework for Productive Geometry Analysis in LOX-Collagen Docking Screens"
+version: "0.2.1"
+date-released: "2026-05-16"
+authors:
+  - family-names: "Koroteev"
+    given-names: "Sasha"
+repository-code: "https://github.com/G1F12/LOXDockAudit"
+url: "https://github.com/G1F12/LOXDockAudit"
+license: "MIT"
+keywords:
+  - bioinformatics
+  - computational biology
+  - structural biology
+  - protein engineering
+  - docking
+  - collagen
+  - enzyme engineering
+  - reproducibility

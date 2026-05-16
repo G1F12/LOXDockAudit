@@ -1,5 +1,7 @@
 # LOXDockAudit
 
+[![CI](https://github.com/G1F12/LOXDockAudit/actions/workflows/ci.yml/badge.svg)](https://github.com/G1F12/LOXDockAudit/actions/workflows/ci.yml)
+
 Negative-control-aware docking and productive geometry auditor for LOX-collagen engineering.
 
 ## Current status

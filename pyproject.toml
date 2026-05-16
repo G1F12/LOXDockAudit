@@ -4,6 +4,7 @@ version = "0.2.1"
 description = "Negative-control-aware docking and productive geometry auditor for LOX-collagen engineering."
 readme = "README.md"
 requires-python = ">=3.10"
+license = { file = "LICENSE" }
 dependencies = [
     "biopython",
     "numpy",
@@ -11,6 +12,14 @@ dependencies = [
     "pyyaml",
     "click",
     "pytest",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "pytest",
+    "ruff",
+    "types-PyYAML",
 ]
 
 [project.scripts]
