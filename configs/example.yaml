@@ -1,0 +1,22 @@
+construct_id: test_lox_baseline
+construct_type: lox_baseline
+models_dir: examples/data/lox_baseline
+receptor:
+  chains: ["A", "B"]
+  target_residues:
+    - chain: "A"
+      resi: 11
+      resn: "LYS"
+      atom: "NZ"
+ligand:
+  chains: ["D"]
+lox_domain:
+  start: 1
+  end: 200
+active_site:
+  residues:
+    - {label: "His292", resi: 124}
+    - {label: "His294", resi: 126}
+    - {label: "His296", resi: 128}
+    - {label: "Lys320", resi: 152}
+    - {label: "Tyr355", resi: 187}

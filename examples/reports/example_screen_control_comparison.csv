@@ -1,0 +1,4 @@
+construct_id,control_type,candidate_productive_count,control_productive_count,candidate_best_distance,control_best_distance,candidate_beats_control_count,candidate_beats_control_distance,conclusion
+test_lox_baseline,baseline,2,2,6.0,6.0,False,False,Candidate matches baseline.
+test_lox_baseline,scrambled,2,2,6.0,6.0,False,False,Candidate matches scrambled control. Binding may be nonspecific.
+test_lox_baseline,polyK,2,2,6.0,6.0,False,False,Candidate matches polyK control. Binding may be nonspecific.

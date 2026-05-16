@@ -1,0 +1,22 @@
+screen_id: example_screen
+candidate_construct_id: example_candidate
+constructs:
+  - construct_id: example_baseline
+    control_type: baseline
+    config_path: example.yaml
+  - construct_id: example_candidate
+    control_type: candidate
+    config_path: example.yaml
+  - construct_id: example_scrambled
+    control_type: scrambled
+    config_path: example.yaml
+  - construct_id: example_polyK
+    control_type: polyK
+    config_path: example.yaml
+strict_criteria:
+  pass_count_greater_than_baseline: true
+  best_distance_lte_baseline: true
+  best_productive_rank_max: 3
+  cbd_must_contribute: false
+  must_beat_scrambled: true
+  must_beat_polyK: true

@@ -1,0 +1,4 @@
+rank,model_path,active_site_to_target_distance,productive,lox_contacts,cbd_contacts,closest_active_site_resi,warning
+1,examples\data\lox_baseline\model_1.pdb,6.0,True,136,0,124,
+2,examples\data\lox_baseline\model_2.pdb,14.0,False,16,0,124,
+3,examples\data\lox_baseline\model_3.pdb,7.0,True,128,0,124,

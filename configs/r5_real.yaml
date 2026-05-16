@@ -1,0 +1,29 @@
+construct_id: r5_real_lox169
+construct_type: lox_baseline
+
+models_dir: examples/data/r5_real_clean2
+
+productive_distance_threshold: 8.0
+
+receptor:
+  chains: ["A", "B"]
+  target_residues:
+    - chain: "A"
+      resi: 11
+      resn: "LYS"
+      atom: "NZ"
+
+ligand:
+  chains: ["D"]
+
+lox_domain:
+  start: 168
+  end: 417
+
+active_site:
+  residues:
+    - {label: "His292", resi: 292}
+    - {label: "His294", resi: 294}
+    - {label: "His296", resi: 296}
+    - {label: "Lys320", resi: 320}
+    - {label: "Tyr355", resi: 355}
