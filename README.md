@@ -80,6 +80,22 @@ Result after numeric model sorting:
 - Best distance: 6.16 A
 - Best productive rank: 3
 
+Real output excerpt:
+
+```text
+## Productive Geometry
+
+- Productive poses: 2 / 10
+- Best distance: 6.159 A
+- Best productive rank: 3
+- Productive distance threshold: 8.000 A
+- LOX contact frequency: 1.000
+- CBD contact frequency: 0.000
+- CBD coupling: 0.000
+```
+
+![Round 5 active-site-to-target distances](docs/figures/round5_example.png)
+
 Interpretation: the real HDOCK dataset is parsed successfully, and
 productive-rank calculation now uses numeric model ordering rather than
 lexicographic ordering.
