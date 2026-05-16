@@ -8,3 +8,6 @@ venv/
 .env
 .DS_Store
 *.egg-info/
+real_reports/
+real_reports_fixed/
+*_reports/
