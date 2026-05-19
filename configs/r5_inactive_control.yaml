@@ -1,0 +1,25 @@
+comparison_id: r5_lox169_active_vs_inactive
+top_n: 10
+productive_distance_threshold: 8.0
+mutations:
+  - H292A
+  - H294A
+  - H296A
+
+active:
+  label: active LOX169-417
+  construct_id: r5_real_lox169
+  config_path: ../examples/real_hdock_round5/config.yaml
+  catalytic_residues:
+    - {label: "His292", resi: 292, expected_resn: "HIS"}
+    - {label: "His294", resi: 294, expected_resn: "HIS"}
+    - {label: "His296", resi: 296, expected_resn: "HIS"}
+
+inactive:
+  label: inactive LOX169-417 H292A/H294A/H296A
+  construct_id: r5_inactive_h292a_h294a_h296a
+  config_path: r5_inactive.yaml
+  catalytic_residues:
+    - {label: "Ala292_H292A", resi: 292, expected_resn: "ALA"}
+    - {label: "Ala294_H294A", resi: 294, expected_resn: "ALA"}
+    - {label: "Ala296_H296A", resi: 296, expected_resn: "ALA"}

@@ -3,7 +3,7 @@ title: "LOXDockAudit: A Reproducible Framework for Control-Aware
         Productive Geometry Analysis in LOX–Collagen Docking Screens"
 author: "Sasha"
 date: "May 2026"
-version: "v0.3.0"
+version: "v0.4.0"
 repository: "https://github.com/G1F12/LOXDockAudit"
 ---
 
@@ -12,7 +12,7 @@ repository: "https://github.com/G1F12/LOXDockAudit"
 
 **Author:** Sasha  
 **Date:** May 2026  
-**Version:** v0.3.0  
+**Version:** v0.4.0  
 **Repository:** https://github.com/G1F12/LOXDockAudit  
 
 ---
@@ -85,6 +85,10 @@ The structural QC pipeline flags fold-corrupted models before docking interpreta
 
 The input audit records a SHA256 hash for every file used in the analysis. It performs cross-construct duplicate detection, N-terminus sequence checks, and chain ID verification. These checks prevent scientifically invalid comparisons caused by reused structures, mislabeled controls, truncated constructs, or chain mismatches. Together with deterministic sorting and recorded configuration, the audit makes the analysis reproducible and reviewable.
 
+### 3.6 Substrate Orientation Score
+
+Version v0.4.0 adds an optional substrate orientation score for target Lys/Hyl residues. The score measures the angle between the approach vector from the active-site centroid to the target NZ atom and the side-chain vector from Lys C-beta to NZ. Smaller angles indicate that the side chain points toward the active site. When orientation scoring is enabled, a fully productive pose must satisfy both the distance threshold and the orientation threshold; when it is disabled, all v0.3 distance metrics and pass/fail behavior are preserved.
+
 ## 4. Software Implementation
 
 LOXDockAudit is implemented as a tested Python package with a command-line interface, configuration-driven analysis, and report generation. The software design keeps scientific assumptions explicit in configuration files and separates parsing, measurement, QC, criteria evaluation, and reporting into focused modules.
@@ -98,7 +102,8 @@ LOXDockAudit is a Python package using a `src` layout and `pyproject.toml`, with
 | Module           | Responsibility                              |
 |------------------|---------------------------------------------|
 | pdb_parser.py    | PDB loading, atom selection, SHA256         |
-| distances.py     | Active-site-to-substrate distance           |
+| distances.py     | Active-site-to-substrate distance and pose geometry |
+| orientation.py   | Target Lys/Hyl side-chain orientation score |
 | contacts.py      | Ligand-receptor contact counting            |
 | structural_qc.py | His triad, Lys-Tyr, disulfide, SASA proxy  |
 | alphafold_qc.py  | pLDDT/PAE parsing from AF2/ColabFold output |
@@ -129,7 +134,7 @@ loxdockaudit check-config --config configs/round5_screen.yaml
 
 ### 4.4 Test coverage
 
-LOXDockAudit has 182 tests total across 8 test files. Unit tests cover `pdb_parser`, `distances`, `contacts`, `input_audit`, `config`, `reporting`, v0.2 criteria/screen behavior, and v0.3 structural QC. Integration tests cover the v0.1 CLI `run` command, the v0.2 `screen` command, and v0.3 QC integration. Static checks report mypy: 0 type errors across 34 source files, ruff: 0 linting violations, and CI runs through a GitHub Actions workflow on push.
+LOXDockAudit v0.4.0 has 215 tests. Unit tests cover `pdb_parser`, `distances`, `orientation`, `contacts`, `input_audit`, `config`, `reporting`, criteria/screen behavior, structural QC, inactive-control analysis, and Round 5 v0.4 regression behavior. Integration tests cover the CLI workflows, control-aware screen analysis, inactive catalytic controls, and backward compatibility with the v0.3 distance-only Round 5 metrics. Static checks report mypy: 0 type errors and ruff: 0 linting violations, and CI runs through a GitHub Actions workflow on push.
 
 ## 5. Results: Real Round 5 Reproduction
 
@@ -167,6 +172,33 @@ The screen produced 2 productive poses out of 10. The best active-site distance 
 
 The Round 5 reproduction showed that baseline LOX169-417 produced a measurable productive-geometry signal without a fusion domain. This baseline set the minimum comparison standard for engineered constructs: future candidates must improve productive pose count, preserve early-rank productive geometry, and outperform negative controls rather than only increasing collagen contact.
 
+### 5.5 Active vs catalytically inactive control
+
+An H292A/H294A/H296A inactive control was added for LOX169-417 to test whether
+productive geometry metrics are sensitive to catalytic-site disruption. The
+control was generated as a ColabFold/AlphaFold2-ptm single-chain mutant model and
+docked against the same 6VZX lysine-site receptor using the paired Round 5
+HDOCKlite setup. This is a computational structural-control experiment, not an
+enzymatic-activity assay.
+
+| Metric | Active | Inactive |
+| --- | --- | --- |
+| Productive poses | 2/10 | 1/10 |
+| Best active-site distance | 6.159 A | 6.421 A |
+| Best productive rank | 3 | 7 |
+| fully_productive_count | 1 | 0 |
+| fully_productive_fraction | 0.100 | 0.000 |
+| best_orientation_angle_deg | 68.698 | 29.197 |
+| best_fully_productive_rank | 5 | N/A |
+| Productive fraction | 0.200 | 0.100 |
+| QC status | PASS | PASS |
+| Active-site geometry | intact | disrupted |
+
+The active construct retained more favorable productive geometry under the
+current docking metric. This supports the value of the inactive structural
+control, while avoiding an overclaim: the result does not prove enzymatic
+activity, copper loading, LTQ chemistry, or collagen oxidation.
+
 ## 6. Bug Discovery: Lexicographic Ordering
 
 The strongest reproducibility finding during development was a rank-ordering bug caused by filename sorting. The bug changed a scientific verdict, not only a display order.
@@ -198,20 +230,20 @@ The regression test `test_natural_sort_order()` verifies that `model_1, model_10
 ## 7. Limitations
 
 1. Distance threshold of 8.0 Å is a geometric heuristic, not derived from LOX crystal structure kinetics data.
-2. Active-site-to-substrate distance uses minimum heavy-atom distance, not substrate orientation or docking pocket shape.
-3. Structural QC uses CA/CB distances and a burial proxy, not true SASA or normal-mode analysis.
-4. pLDDT/PAE parsing requires AlphaFold/ColabFold output; homology models are not supported.
-5. CBD coupling metric (Pearson r over 10 poses) is statistically underpowered; interpret with caution.
-6. LOXDockAudit does not prove: enzymatic activity, Cu loading, LTQ/topaquinone maturation, collagen oxidation, crosslink formation, mechanical strengthening, or in vivo safety.
-7. All analysis is based on static docking poses; molecular dynamics and conformational flexibility are not modeled.
+2. Orientation threshold of 90° is a geometric heuristic.
+3. Active-site-to-substrate distance uses minimum heavy-atom distance and does not model docking pocket shape.
+4. Structural QC uses CA/CB distances and a burial proxy, not true SASA or normal-mode analysis.
+5. pLDDT/PAE parsing requires AlphaFold/ColabFold output; homology models are not supported.
+6. CBD coupling metric (Pearson r over 10 poses) is statistically underpowered; interpret with caution.
+7. LOXDockAudit does not prove: enzymatic activity, Cu loading, LTQ/topaquinone maturation, collagen oxidation, crosslink formation, mechanical strengthening, or in vivo safety.
+8. All analysis is based on static docking poses; molecular dynamics and conformational flexibility are not modeled.
 
 ## 8. Future Work
 
-1. v0.4: Substrate orientation score: add vector analysis of target Lys side-chain direction relative to active-site pocket.
-2. Expand example datasets: include a failed FMOD trapping case and a CNA-like positive benchmark.
-3. PyMOL script generation for visualizing productive poses and active-site geometry.
-4. Statistical comparison across controls using bootstrap resampling rather than deterministic criteria.
-5. Support for AlphaFold3 output format (updated JSON schema).
+1. Expand example datasets: include a failed FMOD trapping case and a CNA-like positive benchmark.
+2. PyMOL script generation for visualizing productive poses and active-site geometry.
+3. Statistical comparison across controls using bootstrap resampling rather than deterministic criteria.
+4. Support for AlphaFold3 output format (updated JSON schema).
 
 ## References
 

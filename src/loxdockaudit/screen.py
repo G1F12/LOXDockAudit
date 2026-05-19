@@ -61,6 +61,8 @@ def run_single_construct(
                 target_chain=target_residue.chain,
                 threshold=construct_config.productive_distance_threshold,
                 target_atom_names=[target_residue.atom],
+                orientation_config=construct_config.orientation,  # v0.4
+                active_site_residues=construct_config.active_site.residues,  # v0.4
             )
             contact_result = analyze_pose_contacts(
                 structure=structure,
@@ -92,6 +94,13 @@ def run_single_construct(
                 cbd_contacts=contact_result["cbd_contacts"],
                 closest_active_site_resi=distance_result["closest_active_site_resi"],
                 warning=distance_result["warning"],
+                orientation_enabled=construct_config.orientation.enabled,  # v0.4
+                orientation_angle_deg=distance_result.get("orientation_angle_deg"),  # v0.4
+                orientation_productive=distance_result.get("orientation_productive"),  # v0.4
+                fully_productive=distance_result.get(  # v0.4
+                    "fully_productive",
+                    distance_result["productive"],
+                ),
             )
         )
 
@@ -195,9 +204,22 @@ def _build_summary(
     contact_results: list[dict[str, Any]],
 ) -> ConstructSummary:
     productive_count = sum(1 for pose in pose_metrics if pose.productive)
+    # v0.4: summarize optional orientation-aware productivity.
+    fully_productive_count = sum(
+        1 for pose in pose_metrics if pose.fully_productive is True
+    )
+    orientation_angles = [
+        pose.orientation_angle_deg
+        for pose in pose_metrics
+        if pose.orientation_angle_deg is not None
+    ]
     best_distance = min(pose.active_site_to_target_distance for pose in pose_metrics)
     best_productive_rank = next(
         (pose.rank for pose in pose_metrics if pose.productive),
+        None,
+    )
+    best_fully_productive_rank = next(  # v0.4
+        (pose.rank for pose in pose_metrics if pose.fully_productive is True),
         None,
     )
     frequencies = compute_contact_frequencies(contact_results)
@@ -216,6 +238,12 @@ def _build_summary(
         cbd_contact_frequency=frequencies["cbd_contact_frequency"],
         cbd_coupling=cbd_coupling,
         strict_pass=None,
+        orientation_enabled=construct_config.orientation.enabled,  # v0.4
+        fully_productive_count=fully_productive_count,  # v0.4
+        best_orientation_angle_deg=(  # v0.4
+            min(orientation_angles) if orientation_angles else None
+        ),
+        best_fully_productive_rank=best_fully_productive_rank,  # v0.4
     )
 
 

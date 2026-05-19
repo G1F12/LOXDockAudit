@@ -13,6 +13,10 @@ from loxdockaudit.config import load_construct_config, load_screen_config
 from loxdockaudit.contacts import analyze_pose_contacts, compute_contact_frequencies
 from loxdockaudit.distances import active_site_to_target_distance
 from loxdockaudit.input_audit import audit_screen, format_audit_report
+from loxdockaudit.inactive_control import (
+    load_inactive_control_config,
+    run_inactive_control_analysis,
+)
 from loxdockaudit.fold_qc import format_qc_report, run_structural_qc
 from loxdockaudit.models import ConstructConfig, ConstructSummary, PoseMetrics, StructuralQCResult
 from loxdockaudit.pdb_parser import load_structure
@@ -248,6 +252,40 @@ def screen(config: str, out: str, top_n: int, verbose: bool) -> None:
         sys.exit(1)
 
 
+@click.command("inactive-control")
+@click.option("--config", required=True, help="Path to inactive-control YAML config")
+@click.option("--out", required=True, help="Output directory")
+@click.option("--top-n", default=None, type=int, help="Override top-N poses to analyze")
+def inactive_control(config: str, out: str, top_n: int | None) -> None:
+    """Compare active LOX against a catalytically inactive control."""
+    try:
+        comparison_config = load_inactive_control_config(config)
+        result = run_inactive_control_analysis(
+            comparison_config=comparison_config,
+            out_dir=out,
+            top_n=top_n,
+        )
+        active_summary = result["active_summary"]
+        inactive_summary = result["inactive_summary"]
+
+        click.echo(f"Comparison: {comparison_config.comparison_id}")
+        click.echo(
+            "Active productive poses: "
+            f"{active_summary.productive_count}/{active_summary.total_poses}"
+        )
+        click.echo(
+            "Inactive productive poses: "
+            f"{inactive_summary.productive_count}/{inactive_summary.total_poses}"
+        )
+        click.echo(f"Active best distance: {active_summary.best_distance:.2f} A")
+        click.echo(f"Inactive best distance: {inactive_summary.best_distance:.2f} A")
+        click.echo(f"Interpretation: {result['interpretation']}")
+        click.echo(f"Output saved to: {out}")
+    except Exception as exc:
+        click.echo(f"ERROR: {exc}")
+        sys.exit(1)
+
+
 def _audit_config_from_construct(construct_config: ConstructConfig) -> dict[str, Any]:
     return {
         "construct_id": construct_config.construct_id,
@@ -411,3 +449,8 @@ def _criteria_status(value: object) -> str:
 cli.add_command(run)
 cli.add_command(screen)
 cli.add_command(check_config)
+cli.add_command(inactive_control)
+
+
+if __name__ == "__main__":
+    cli()

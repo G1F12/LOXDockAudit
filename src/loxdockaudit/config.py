@@ -12,11 +12,17 @@ from loxdockaudit.models import (
     ConstructConfig,
     ControlEntry,
     DomainRange,
+    OrientationConfig,
     QCConfig,
     ScreenConfig,
     StrictCriteria,
     TargetResidue,
 )
+
+
+# v0.4: explicit config exception; subclasses ValueError for backward compatibility.
+class ConfigError(ValueError):
+    """Raised when LOXDockAudit YAML configuration is invalid."""
 
 
 def load_construct_config(yaml_path: str) -> ConstructConfig:
@@ -156,6 +162,10 @@ def _construct_from_mapping(data: Any, source: str) -> ConstructConfig:
         is_inactive=bool(data.get("is_inactive", False)),
         control_type=data.get("control_type"),
         structural_qc=_qc_config_from_mapping(data.get("structural_qc"), source=source),
+        orientation=_orientation_config_from_mapping(  # v0.4
+            data.get("orientation"),
+            source=source,
+        ),
     )
 
 
@@ -260,6 +270,39 @@ def _qc_config_from_mapping(data: Any, source: str) -> QCConfig | None:
     )
 
 
+# v0.4: optional construct-level orientation config parser.
+def _orientation_config_from_mapping(data: Any, source: str) -> OrientationConfig:
+    if data is None:
+        return OrientationConfig(enabled=False)
+    if not isinstance(data, dict):
+        raise ConfigError(f"{source}: orientation must be a mapping")
+
+    threshold_deg = float(data.get("threshold_deg", 90.0))
+    if not 0.0 <= threshold_deg <= 180.0:
+        raise ConfigError(
+            f"{source}: orientation.threshold_deg must be between 0.0 and 180.0"
+        )
+
+    return OrientationConfig(
+        enabled=bool(data.get("enabled", False)),
+        threshold_deg=threshold_deg,
+        sidechain_atoms=_string_list_field(
+            data,
+            "sidechain_atoms",
+            default=["CB", "NZ"],
+            source=source,
+            prefix="orientation",
+        ),
+        activesite_centroid_atoms=_string_list_field(
+            data,
+            "activesite_centroid_atoms",
+            default=["CA"],
+            source=source,
+            prefix="orientation",
+        ),
+    )
+
+
 def _disulfide_pairs_from_mapping(data: Any, source: str) -> list[tuple[int, int]]:
     if not isinstance(data, list):
         raise ValueError(f"{source}: structural_qc.disulfide_pairs must be a list")
@@ -281,11 +324,39 @@ def _list_field(data: dict[str, Any], field_name: str, source: str) -> list[Any]
     return value
 
 
+# v0.4: validate optional string-list fields without changing structural_qc errors.
+def _string_list_field(
+    data: dict[str, Any],
+    field_name: str,
+    default: list[str],
+    source: str,
+    prefix: str,
+) -> list[str]:
+    value = data.get(field_name, default)
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ConfigError(f"{source}: {prefix}.{field_name} must be a list of strings")
+    return list(value)
+
+
 def _strict_criteria_from_mapping(data: Any) -> StrictCriteria:
     if data is None:
         return StrictCriteria()
     if not isinstance(data, dict):
         raise ValueError("strict_criteria must be a mapping")
+
+    # v0.4: validate optional orientation angle criterion when present.
+    best_orientation_angle_max_deg = (
+        float(data["best_orientation_angle_max_deg"])
+        if "best_orientation_angle_max_deg" in data
+        else None
+    )
+    if (
+        best_orientation_angle_max_deg is not None
+        and not 0.0 <= best_orientation_angle_max_deg <= 180.0
+    ):
+        raise ConfigError(
+            "strict_criteria.best_orientation_angle_max_deg must be between 0.0 and 180.0"
+        )
 
     return StrictCriteria(
         pass_count_greater_than_baseline=bool(
@@ -296,6 +367,20 @@ def _strict_criteria_from_mapping(data: Any) -> StrictCriteria:
         cbd_must_contribute=bool(data.get("cbd_must_contribute", False)),
         must_beat_scrambled=bool(data.get("must_beat_scrambled", True)),
         must_beat_polyK=bool(data.get("must_beat_polyK", True)),
+        # v0.4: optional orientation criteria; absent keys remain None.
+        fully_productive_count_greater_than_baseline=(
+            bool(data["fully_productive_count_greater_than_baseline"])
+            if "fully_productive_count_greater_than_baseline" in data
+            else None
+        ),
+        best_orientation_angle_max_deg=(
+            best_orientation_angle_max_deg
+        ),
+        best_fully_productive_rank_max=(
+            int(data["best_fully_productive_rank_max"])
+            if "best_fully_productive_rank_max" in data
+            else None
+        ),
     )
 
 

@@ -1,30 +1,31 @@
 cff-version: 1.2.0
-message: "If you use LOXDockAudit in your research, please cite it using this metadata."
+message: "If you use LOXDockAudit, please cite the software using this metadata."
 type: software
-title: "LOXDockAudit: A Reproducible Framework for Control-Aware Productive Geometry Analysis in LOX-Collagen Docking Screens"
-version: "0.3.0"
-date-released: "2026-05-16"
+title: "LOXDockAudit: Control-aware productive-geometry analysis for LOX-collagen docking screens"
+version: "0.4.0"
+date-released: "2026-05-19"
 license: MIT
 repository-code: "https://github.com/G1F12/LOXDockAudit"
 url: "https://github.com/G1F12/LOXDockAudit"
 doi: "10.5281/zenodo.20241797"
 abstract: >
-  LOXDockAudit is a negative-control-aware computational triage tool
-  for LOX-Collagen engineering. It evaluates whether engineered LOX
-  constructs are positioned near collagen Lys/Hyl substrate residues
-  in potentially productive catalytic geometry. Features include
-  active-site-to-substrate distance scoring, control-aware screen
-  comparison, structural QC (His triad, Lys-Tyr, disulfide geometry),
-  input auditing with SHA256 verification, and reproducible real
-  HDOCK dataset validation.
+  LOXDockAudit is a computational docking-analysis and reproducibility
+  framework for LOX-collagen screens. It evaluates whether docked poses satisfy
+  active-site distance and optional substrate-orientation geometry criteria,
+  supports control-aware comparisons including catalytically inactive controls,
+  performs structural quality checks, and generates auditable CSV, Markdown,
+  and SVG reports. The software is intended for computational interpretation of
+  docking poses and does not provide experimental validation of enzymatic
+  activity or biological efficacy.
 keywords:
   - lysyl oxidase
   - collagen
-  - protein engineering
   - docking
   - structural biology
   - bioinformatics
+  - computational biology
   - reproducibility
+  - protein engineering
 authors:
   - family-names: "Karatseyeu"
     given-names: "Aliaksandr"

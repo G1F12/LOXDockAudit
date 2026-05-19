@@ -163,12 +163,116 @@ def test_decision_text_failed_rank_mentions_rank() -> None:
     assert "rank" in text
 
 
+def test_orientation_criteria_skip_when_orientation_disabled() -> None:
+    result = evaluate_criteria(
+        _summary("candidate", 2, 5.0, 1),
+        _summary("baseline", 1, 6.0, 1),
+        [],
+        StrictCriteria(
+            must_beat_scrambled=False,
+            must_beat_polyK=False,
+            fully_productive_count_greater_than_baseline=True,
+            best_orientation_angle_max_deg=75.0,
+            best_fully_productive_rank_max=5,
+        ),
+    )
+
+    assert result["fully_productive_count_greater_than_baseline"] is None
+    assert result["best_orientation_angle_max_deg"] is None
+    assert result["best_fully_productive_rank_max"] is None
+    assert any("orientation disabled" in item for item in result["criteria_skipped"])
+
+
+def test_orientation_criteria_pass_when_enabled_and_metrics_pass() -> None:
+    candidate = _summary(
+        "candidate",
+        2,
+        5.0,
+        1,
+        orientation_enabled=True,
+        fully_productive_count=2,
+        best_orientation_angle_deg=60.0,
+        best_fully_productive_rank=2,
+    )
+    baseline = _summary(
+        "baseline",
+        1,
+        6.0,
+        1,
+        orientation_enabled=True,
+        fully_productive_count=1,
+        best_orientation_angle_deg=80.0,
+        best_fully_productive_rank=3,
+    )
+
+    result = evaluate_criteria(
+        candidate,
+        baseline,
+        [],
+        StrictCriteria(
+            must_beat_scrambled=False,
+            must_beat_polyK=False,
+            fully_productive_count_greater_than_baseline=True,
+            best_orientation_angle_max_deg=75.0,
+            best_fully_productive_rank_max=5,
+        ),
+    )
+
+    assert result["fully_productive_count_greater_than_baseline"] is True
+    assert result["best_orientation_angle_max_deg"] is True
+    assert result["best_fully_productive_rank_max"] is True
+
+
+def test_orientation_criteria_fail_when_enabled_and_metrics_fail() -> None:
+    candidate = _summary(
+        "candidate",
+        2,
+        5.0,
+        1,
+        orientation_enabled=True,
+        fully_productive_count=1,
+        best_orientation_angle_deg=90.0,
+        best_fully_productive_rank=None,
+    )
+    baseline = _summary(
+        "baseline",
+        1,
+        6.0,
+        1,
+        orientation_enabled=True,
+        fully_productive_count=1,
+        best_orientation_angle_deg=80.0,
+        best_fully_productive_rank=3,
+    )
+
+    result = evaluate_criteria(
+        candidate,
+        baseline,
+        [],
+        StrictCriteria(
+            must_beat_scrambled=False,
+            must_beat_polyK=False,
+            fully_productive_count_greater_than_baseline=True,
+            best_orientation_angle_max_deg=75.0,
+            best_fully_productive_rank_max=5,
+        ),
+    )
+
+    assert result["fully_productive_count_greater_than_baseline"] is False
+    assert result["best_orientation_angle_max_deg"] is False
+    assert result["best_fully_productive_rank_max"] is False
+
+
 def _summary(
     construct_id: str,
     productive_count: int,
     best_distance: float,
     rank: int | None,
     cbd_frequency: float = 0.0,
+    orientation_enabled: bool = False,
+    fully_productive_count: int = 0,
+    best_orientation_angle_deg: float | None = None,
+    best_fully_productive_rank: int | None = None,
 ) -> ConstructSummary:
     return ConstructSummary(
         construct_id=construct_id,
@@ -180,4 +284,8 @@ def _summary(
         cbd_contact_frequency=cbd_frequency,
         cbd_coupling=0.0,
         strict_pass=None,
+        orientation_enabled=orientation_enabled,
+        fully_productive_count=fully_productive_count,
+        best_orientation_angle_deg=best_orientation_angle_deg,
+        best_fully_productive_rank=best_fully_productive_rank,
     )

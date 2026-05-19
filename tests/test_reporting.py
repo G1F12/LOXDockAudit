@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from loxdockaudit.distances import PoseGeometry
 from loxdockaudit.models import (
     ActiveSiteConfig,
     ConstructConfig,
@@ -15,6 +16,7 @@ from loxdockaudit.models import (
 )
 from loxdockaudit.reporting import (
     control_comparisons_to_dataframe,
+    generate_geometry_scatter,
     generate_markdown_report,
     generate_screen_markdown_report,
     poses_to_dataframe,
@@ -32,6 +34,9 @@ def test_poses_to_dataframe_empty() -> None:
         "model_path",
         "active_site_to_target_distance",
         "productive",
+        "orientation_angle_deg",
+        "orientation_productive",
+        "fully_productive",
         "lox_contacts",
         "cbd_contacts",
         "closest_active_site_resi",
@@ -47,8 +52,11 @@ def test_poses_to_dataframe_three_sorted() -> None:
             PoseMetrics(2, "p2", 15.0, False, 0, 0),
         ]
     )
-    assert df.shape == (3, 8)
+    assert df.shape == (3, 11)
     assert df["rank"].tolist() == [1, 2, 3]
+    assert df["orientation_angle_deg"].tolist() == ["N/A", "N/A", "N/A"]
+    assert df["orientation_productive"].tolist() == ["N/A", "N/A", "N/A"]
+    assert df["fully_productive"].tolist() == ["", "", ""]
 
 
 def test_summaries_to_dataframe_productive_fraction() -> None:
@@ -216,8 +224,31 @@ def test_generate_screen_markdown_report_limits_pose_tables_to_top_five() -> Non
     )
     report = generate_screen_markdown_report(_screen_result(), {"candidate": pose_df})
 
-    assert "| 5 | 5.000 | True | 1 | 0 |" in report
+    assert "| 5 | 5.000 | True | N/A | N/A |  | 1 | 0 |" in report
     assert "| 6 | 6.000 | True | 1 | 0 |" not in report
+
+
+def test_generate_geometry_scatter_writes_svg(tmp_path: Path) -> None:
+    out = tmp_path / "plots"
+
+    generate_geometry_scatter(
+        [
+            PoseGeometry(
+                pose_rank=1,
+                distance_A=5.0,
+                distance_productive=True,
+                orientation_angle_deg=45.0,
+                orientation_productive=True,
+                fully_productive=True,
+            )
+        ],
+        str(out),
+        "construct",
+    )
+
+    svg = (out / "construct_geometry_scatter.svg").read_text(encoding="utf-8")
+    assert "construct geometry scatter" in svg
+    assert "productive zone" in svg
 
 
 def test_generate_screen_markdown_report_no_warnings() -> None:

@@ -85,6 +85,15 @@ def evaluate_criteria(
     else:
         _skip(result, "beats_polyK", "criterion disabled")
 
+    # v0.4: optional orientation-aware strict criteria.
+    _evaluate_orientation_criteria(
+        result,
+        candidate,
+        baseline,
+        controls,
+        criteria,
+    )
+
     return result
 
 
@@ -159,6 +168,92 @@ def _checked(result: dict[str, Any], criterion_name: str) -> None:
 
 def _skip(result: dict[str, Any], criterion_name: str, reason: str) -> None:
     result["criteria_skipped"].append(f"{criterion_name}: {reason}")
+
+
+# v0.4: evaluate only explicitly configured orientation criteria.
+def _evaluate_orientation_criteria(
+    result: dict[str, Any],
+    candidate: ConstructSummary,
+    baseline: ConstructSummary | None,
+    controls: list[tuple[str, ConstructSummary]],
+    criteria: StrictCriteria,
+) -> None:
+    requested = {
+        "fully_productive_count_greater_than_baseline": (
+            criteria.fully_productive_count_greater_than_baseline is not None
+        ),
+        "best_orientation_angle_max_deg": (
+            criteria.best_orientation_angle_max_deg is not None
+        ),
+        "best_fully_productive_rank_max": (
+            criteria.best_fully_productive_rank_max is not None
+        ),
+    }
+    if not any(requested.values()):
+        return
+
+    for criterion_name, enabled in requested.items():
+        if enabled:
+            result[criterion_name] = None
+
+    if _any_orientation_disabled(candidate, baseline, controls):
+        for criterion_name, enabled in requested.items():
+            if enabled:
+                _skip(result, criterion_name, "orientation disabled")
+        return
+
+    if requested["fully_productive_count_greater_than_baseline"]:
+        if not criteria.fully_productive_count_greater_than_baseline:
+            _skip(
+                result,
+                "fully_productive_count_greater_than_baseline",
+                "criterion disabled",
+            )
+        elif baseline is None:
+            _skip(
+                result,
+                "fully_productive_count_greater_than_baseline",
+                "no baseline summary",
+            )
+        else:
+            result["fully_productive_count_greater_than_baseline"] = (
+                candidate.fully_productive_count > baseline.fully_productive_count
+            )
+            _checked(result, "fully_productive_count_greater_than_baseline")
+
+    if requested["best_orientation_angle_max_deg"]:
+        angle_threshold = criteria.best_orientation_angle_max_deg
+        assert angle_threshold is not None
+        if candidate.best_orientation_angle_deg is None:
+            result["best_orientation_angle_max_deg"] = False
+        else:
+            result["best_orientation_angle_max_deg"] = (
+                candidate.best_orientation_angle_deg <= angle_threshold
+            )
+        _checked(result, "best_orientation_angle_max_deg")
+
+    if requested["best_fully_productive_rank_max"]:
+        rank_threshold = criteria.best_fully_productive_rank_max
+        assert rank_threshold is not None
+        result["best_fully_productive_rank_max"] = (
+            candidate.best_fully_productive_rank is not None
+            and candidate.best_fully_productive_rank <= rank_threshold
+        )
+        _checked(result, "best_fully_productive_rank_max")
+
+
+# v0.4: old summaries default orientation_enabled=False, causing requested
+# orientation criteria to skip rather than fail.
+def _any_orientation_disabled(
+    candidate: ConstructSummary,
+    baseline: ConstructSummary | None,
+    controls: list[tuple[str, ConstructSummary]],
+) -> bool:
+    summaries = [candidate]
+    if baseline is not None:
+        summaries.append(baseline)
+    summaries.extend(summary for _, summary in controls)
+    return any(not summary.orientation_enabled for summary in summaries)
 
 
 def _first_control(
@@ -256,4 +351,10 @@ def _failure_text(criterion: str, criteria_result: dict[str, Any]) -> str:
         return "The candidate did not show CBD contact contribution."
     if criterion == "beats_polyK":
         return "The candidate failed the polyK-control criterion."
+    if criterion == "fully_productive_count_greater_than_baseline":
+        return "The candidate did not exceed the baseline fully productive pose count."
+    if criterion == "best_orientation_angle_max_deg":
+        return "The candidate best orientation angle exceeded the maximum allowed angle."
+    if criterion == "best_fully_productive_rank_max":
+        return "The first fully productive pose rank exceeded the maximum allowed rank."
     return f"The candidate failed criterion {criterion}."

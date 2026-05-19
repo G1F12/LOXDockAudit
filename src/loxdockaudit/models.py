@@ -42,6 +42,15 @@ class QCConfig:
     disulfide_max_sg_distance: float = 2.5
 
 
+# v0.4: construct-level orientation scoring configuration.
+@dataclass
+class OrientationConfig:
+    enabled: bool = False
+    threshold_deg: float = 90.0
+    sidechain_atoms: list[str] = field(default_factory=lambda: ["CB", "NZ"])
+    activesite_centroid_atoms: list[str] = field(default_factory=lambda: ["CA"])
+
+
 @dataclass
 class ConstructConfig:
     construct_id: str
@@ -61,6 +70,7 @@ class ConstructConfig:
     is_inactive: bool = False
     control_type: str | None = None
     structural_qc: QCConfig | None = None
+    orientation: OrientationConfig = field(default_factory=OrientationConfig)  # v0.4
 
 
 @dataclass
@@ -73,6 +83,10 @@ class PoseMetrics:
     cbd_contacts: int
     closest_active_site_resi: int | None = None
     warning: str | None = None
+    orientation_angle_deg: float | None = None  # v0.4
+    orientation_productive: bool | None = None  # v0.4
+    fully_productive: bool | None = None  # v0.4
+    orientation_enabled: bool = False  # v0.4
 
 
 @dataclass
@@ -86,6 +100,10 @@ class ConstructSummary:
     cbd_contact_frequency: float
     cbd_coupling: float
     strict_pass: bool | None
+    orientation_enabled: bool = False  # v0.4
+    fully_productive_count: int = 0  # v0.4
+    best_orientation_angle_deg: float | None = None  # v0.4
+    best_fully_productive_rank: int | None = None  # v0.4
 
 
 @dataclass
@@ -103,6 +121,10 @@ class StrictCriteria:
     cbd_must_contribute: bool = False
     must_beat_scrambled: bool = True
     must_beat_polyK: bool = True
+    # v0.4: None means the optional orientation criterion was absent from YAML.
+    fully_productive_count_greater_than_baseline: bool | None = None
+    best_orientation_angle_max_deg: float | None = None
+    best_fully_productive_rank_max: int | None = None
 
 
 @dataclass

@@ -1,0 +1,11 @@
+rank,model_path,active_site_to_target_distance,productive,lox_contacts,cbd_contacts,closest_active_site_resi,warning
+1,examples\real_hdock_inactive_control\inactive_models\model_1.pdb,16.693308262183578,False,139,0,355,
+2,examples\real_hdock_inactive_control\inactive_models\model_2.pdb,18.331933549659016,False,115,0,355,
+3,examples\real_hdock_inactive_control\inactive_models\model_3.pdb,13.326439661398926,False,149,0,355,
+4,examples\real_hdock_inactive_control\inactive_models\model_4.pdb,20.53407218579745,False,75,0,292,
+5,examples\real_hdock_inactive_control\inactive_models\model_5.pdb,15.230070069836973,False,79,0,355,
+6,examples\real_hdock_inactive_control\inactive_models\model_6.pdb,16.146478257126557,False,91,0,355,
+7,examples\real_hdock_inactive_control\inactive_models\model_7.pdb,6.420658747977693,True,114,0,355,
+8,examples\real_hdock_inactive_control\inactive_models\model_8.pdb,21.093567076121094,False,128,0,296,
+9,examples\real_hdock_inactive_control\inactive_models\model_9.pdb,16.355369941168913,False,90,0,355,
+10,examples\real_hdock_inactive_control\inactive_models\model_10.pdb,29.773736371108637,False,94,0,296,

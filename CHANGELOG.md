@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.4.0 - Orientation and Inactive-Control Release
+
+- Added optional substrate orientation scoring for target Lys/Hyl side-chain geometry.
+- Added fully productive pose scoring when both distance and orientation criteria pass.
+- Added catalytically inactive H292A/H294A/H296A Round 5 control workflow.
+- Added pure-Python SVG geometry scatter plots and two-panel distance/orientation histograms.
+- Added orientation-aware CSV and Markdown reporting fields.
+- Added v0.4 regression tests on the real Round 5 active/inactive dataset.
+- Preserved v0.3 distance-only metrics when orientation is disabled.
+- Verified release QA: 215 tests passing, ruff passing, mypy passing.
+
 ## v0.2.1 - Round 5 Reproducibility Release
 
 - Fixed numeric/natural sorting for HDOCK model filenames, so `model_10.pdb` no longer ranks before `model_2.pdb`.

@@ -9,6 +9,7 @@ from typing import Any, Sequence
 
 import pandas as pd
 
+from loxdockaudit.distances import PoseGeometry
 from loxdockaudit.models import (
     ConstructConfig,
     ConstructSummary,
@@ -25,6 +26,9 @@ POSE_COLUMNS = [
     "model_path",
     "active_site_to_target_distance",
     "productive",
+    "orientation_angle_deg",  # v0.4
+    "orientation_productive",  # v0.4
+    "fully_productive",  # v0.4
     "lox_contacts",
     "cbd_contacts",
     "closest_active_site_resi",
@@ -49,9 +53,11 @@ def poses_to_dataframe(pose_metrics_list: list[PoseMetrics]) -> pd.DataFrame:
     Convert list of PoseMetrics to a pandas DataFrame sorted by rank ascending.
     """
     rows = [asdict(metrics) for metrics in pose_metrics_list]
+    orientation_enabled = any(row.get("orientation_enabled", False) for row in rows)  # v0.4
     frame = pd.DataFrame(rows, columns=POSE_COLUMNS)
     if frame.empty:
         return frame
+    _format_orientation_pose_columns(frame, orientation_enabled)  # v0.4
     return frame.sort_values("rank", ascending=True).reset_index(drop=True)
 
 
@@ -63,6 +69,7 @@ def summaries_to_dataframe(summaries: list[ConstructSummary]) -> pd.DataFrame:
     frame = pd.DataFrame(rows)
     if frame.empty:
         frame["productive_fraction"] = pd.Series(dtype=float)
+        frame["fully_productive_fraction"] = pd.Series(dtype=float)  # v0.4
         return frame
 
     frame["productive_fraction"] = frame.apply(
@@ -73,7 +80,41 @@ def summaries_to_dataframe(summaries: list[ConstructSummary]) -> pd.DataFrame:
         ),
         axis=1,
     )
+    # v0.4: add orientation-aware summary CSV fields.
+    frame["fully_productive_fraction"] = frame.apply(
+        lambda row: (
+            row["fully_productive_count"] / row["total_poses"]
+            if row["total_poses"]
+            else 0.0
+        ),
+        axis=1,
+    )
+    frame["best_orientation_angle_deg"] = frame[
+        "best_orientation_angle_deg"
+    ].apply(_format_optional_na)
+    frame["best_fully_productive_rank"] = frame[
+        "best_fully_productive_rank"
+    ].apply(_format_optional_na)
     return frame
+
+
+# v0.4: pure-SVG distance/orientation scatter plot for PoseGeometry results.
+def generate_geometry_scatter(
+    poses: list[PoseGeometry],
+    output_path: str,
+    construct_id: str,
+) -> None:
+    """
+    Write a pure-SVG scatter plot of distance versus orientation angle.
+
+    The plot uses fixed axes of 0-20 A and 0-180 degrees and highlights the
+    productive zone where distance <= 8 A and orientation angle <= 90 degrees.
+    """
+    path = Path(output_path)
+    if path.suffix.lower() != ".svg":
+        path = path / f"{construct_id}_geometry_scatter.svg"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_geometry_scatter_svg(poses, construct_id), encoding="utf-8")
 
 
 def generate_markdown_report(
@@ -255,6 +296,9 @@ def _pose_table(pose_df: pd.DataFrame) -> str:
         "rank",
         "active_site_to_target_distance",
         "productive",
+        "orientation_angle_deg",  # v0.4
+        "orientation_productive",  # v0.4
+        "fully_productive",  # v0.4
         "lox_contacts",
         "cbd_contacts",
     ]
@@ -267,6 +311,9 @@ def _pose_table(pose_df: pd.DataFrame) -> str:
             row["rank"],
             _format_float(row["active_site_to_target_distance"]),
             row["productive"],
+            row.get("orientation_angle_deg", "N/A"),  # v0.4
+            row.get("orientation_productive", "N/A"),  # v0.4
+            row.get("fully_productive", ""),  # v0.4
             row["lox_contacts"],
             row["cbd_contacts"],
         ]
@@ -285,6 +332,10 @@ def _baseline_comparison_table(
         "total_poses",
         "best_distance",
         "best_productive_rank",
+        "fully_productive_count",  # v0.4
+        "fully_productive_fraction",  # v0.4
+        "best_orientation_angle_deg",  # v0.4
+        "best_fully_productive_rank",  # v0.4
         "lox_contact_frequency",
         "cbd_contact_frequency",
     ]
@@ -297,6 +348,10 @@ def _baseline_comparison_table(
                 item.total_poses,
                 _format_float(item.best_distance),
                 _format_optional(item.best_productive_rank),
+                item.fully_productive_count,  # v0.4
+                _format_float(_fully_productive_fraction(item)),  # v0.4
+                _format_optional_na(item.best_orientation_angle_deg),  # v0.4
+                _format_optional_na(item.best_fully_productive_rank),  # v0.4
                 _format_float(item.lox_contact_frequency),
                 _format_float(item.cbd_contact_frequency),
             ]
@@ -363,6 +418,10 @@ def _summary_table(summary: ConstructSummary) -> str:
             "total_poses",
             "best_distance",
             "best_productive_rank",
+            "fully_productive_count",  # v0.4
+            "fully_productive_fraction",  # v0.4
+            "best_orientation_angle_deg",  # v0.4
+            "best_fully_productive_rank",  # v0.4
             "lox_contact_frequency",
             "cbd_contact_frequency",
             "cbd_coupling",
@@ -375,6 +434,10 @@ def _summary_table(summary: ConstructSummary) -> str:
                 summary.total_poses,
                 _format_float(summary.best_distance),
                 _format_optional(summary.best_productive_rank),
+                summary.fully_productive_count,  # v0.4
+                _format_float(_fully_productive_fraction(summary)),  # v0.4
+                _format_optional_na(summary.best_orientation_angle_deg),  # v0.4
+                _format_optional_na(summary.best_fully_productive_rank),  # v0.4
                 _format_float(summary.lox_contact_frequency),
                 _format_float(summary.cbd_contact_frequency),
                 _format_float(summary.cbd_coupling),
@@ -414,6 +477,9 @@ def _screen_pose_table(pose_df: pd.DataFrame) -> str:
         "rank",
         "active_site_to_target_distance",
         "productive",
+        "orientation_angle_deg",  # v0.4
+        "orientation_productive",  # v0.4
+        "fully_productive",  # v0.4
         "lox_contacts",
         "cbd_contacts",
     ]
@@ -426,6 +492,9 @@ def _screen_pose_table(pose_df: pd.DataFrame) -> str:
             row["rank"],
             _format_float(row["active_site_to_target_distance"]),
             row["productive"],
+            row.get("orientation_angle_deg", "N/A"),  # v0.4
+            row.get("orientation_productive", "N/A"),  # v0.4
+            row.get("fully_productive", ""),  # v0.4
             row["lox_contacts"],
             row["cbd_contacts"],
         ]
@@ -448,6 +517,119 @@ def _screen_warnings_table(warnings: list[tuple[str, int | str, str]]) -> str:
     if not warnings:
         return "No warnings."
     return _markdown_table(["construct_id", "rank", "warning"], warnings)
+
+
+# v0.4: format pose orientation columns according to enabled/disabled output rules.
+def _format_orientation_pose_columns(
+    frame: pd.DataFrame,
+    orientation_enabled: bool,
+) -> None:
+    orientation_enabled = bool(
+        orientation_enabled
+        or frame["orientation_angle_deg"].notna().any()
+        or frame["orientation_productive"].notna().any()
+    )
+    if orientation_enabled:
+        frame["orientation_angle_deg"] = frame["orientation_angle_deg"].apply(
+            _format_optional_na
+        )
+        frame["orientation_productive"] = frame["orientation_productive"].apply(
+            _format_optional_na
+        )
+        frame["fully_productive"] = frame["fully_productive"].apply(
+            lambda value: "" if _is_missing(value) else value
+        )
+        return
+
+    frame["orientation_angle_deg"] = "N/A"
+    frame["orientation_productive"] = "N/A"
+    frame["fully_productive"] = ""
+
+
+# v0.4: build pure SVG for distance/orientation scatter.
+def _geometry_scatter_svg(poses: list[PoseGeometry], construct_id: str) -> str:
+    width = 760
+    height = 520
+    left = 78
+    right = 32
+    top = 56
+    bottom = 70
+    plot_width = width - left - right
+    plot_height = height - top - bottom
+
+    def x_scale(distance: float) -> float:
+        return left + max(0.0, min(distance, 20.0)) / 20.0 * plot_width
+
+    def y_scale(angle: float) -> float:
+        return top + plot_height - max(0.0, min(angle, 180.0)) / 180.0 * plot_height
+
+    zone_x = x_scale(0.0)
+    zone_y = y_scale(90.0)
+    zone_width = x_scale(8.0) - x_scale(0.0)
+    zone_height = y_scale(0.0) - y_scale(90.0)
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        '<rect width="100%" height="100%" fill="white"/>',
+        f'<text x="{width / 2:.1f}" y="28" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700">{_svg_escape(construct_id)} geometry scatter</text>',
+        f'<rect x="{zone_x:.1f}" y="{zone_y:.1f}" width="{zone_width:.1f}" height="{zone_height:.1f}" fill="#86efac" opacity="0.3"/>',
+        f'<text x="{zone_x + 12:.1f}" y="{zone_y + 22:.1f}" font-family="Arial" font-size="12" fill="#166534">productive zone</text>',
+        f'<line x1="{left}" y1="{top + plot_height}" x2="{width - right}" y2="{top + plot_height}" stroke="#111827"/>',
+        f'<line x1="{left}" y1="{top}" x2="{left}" y2="{top + plot_height}" stroke="#111827"/>',
+        f'<text x="{left + plot_width / 2:.1f}" y="{height - 20}" text-anchor="middle" font-family="Arial" font-size="13">Distance (A)</text>',
+        f'<text x="22" y="{top + plot_height / 2:.1f}" transform="rotate(-90 22 {top + plot_height / 2:.1f})" text-anchor="middle" font-family="Arial" font-size="13">Orientation angle (deg)</text>',
+    ]
+
+    for tick in range(0, 21, 4):
+        x = x_scale(float(tick))
+        parts.extend(
+            [
+                f'<line x1="{x:.1f}" y1="{top + plot_height}" x2="{x:.1f}" y2="{top + plot_height + 5}" stroke="#111827"/>',
+                f'<text x="{x:.1f}" y="{top + plot_height + 20}" text-anchor="middle" font-family="Arial" font-size="11">{tick}</text>',
+            ]
+        )
+    for tick in range(0, 181, 30):
+        y = y_scale(float(tick))
+        parts.extend(
+            [
+                f'<line x1="{left - 5}" y1="{y:.1f}" x2="{left}" y2="{y:.1f}" stroke="#111827"/>',
+                f'<text x="{left - 10}" y="{y + 4:.1f}" text-anchor="end" font-family="Arial" font-size="11">{tick}</text>',
+            ]
+        )
+
+    finite_poses = [
+        (pose, pose.orientation_angle_deg)
+        for pose in poses
+        if math.isfinite(pose.distance_A) and pose.orientation_angle_deg is not None
+    ]
+    max_rank = max((pose.pose_rank for pose, _ in finite_poses), default=1)
+    for pose, angle in finite_poses:
+        x = x_scale(pose.distance_A)
+        y = y_scale(angle)
+        color = _rank_blue(pose.pose_rank, max_rank)
+        parts.extend(
+            [
+                f'<circle cx="{x:.1f}" cy="{y:.1f}" r="5" fill="{color}" stroke="#1e3a8a" stroke-width="0.5"/>',
+                f'<text x="{x + 7:.1f}" y="{y - 7:.1f}" font-family="Arial" font-size="10" fill="#111827">{pose.pose_rank}</text>',
+            ]
+        )
+
+    parts.append("</svg>")
+    return "\n".join(parts) + "\n"
+
+
+def _rank_blue(rank: int, max_rank: int) -> str:
+    denominator = max(max_rank - 1, 1)
+    t = max(0.0, min((rank - 1) / denominator, 1.0))
+    start = (30, 64, 175)
+    end = (191, 219, 254)
+    red = round(start[0] + (end[0] - start[0]) * t)
+    green = round(start[1] + (end[1] - start[1]) * t)
+    blue = round(start[2] + (end[2] - start[2]) * t)
+    return f"#{red:02x}{green:02x}{blue:02x}"
+
+
+def _fully_productive_fraction(summary: ConstructSummary) -> float:
+    return summary.fully_productive_count / summary.total_poses if summary.total_poses else 0.0
 
 
 def _markdown_table(columns: list[str], rows: Sequence[Sequence[object]]) -> str:
@@ -482,3 +664,26 @@ def _format_optional(value: object) -> str:
         return "None"
 
     return str(value)
+
+
+# v0.4: CSV/Markdown representation for optional orientation fields.
+def _format_optional_na(value: object) -> str:
+    if _is_missing(value):
+        return "N/A"
+    if isinstance(value, float):
+        return f"{value:.3f}"
+    return str(value)
+
+
+def _is_missing(value: object) -> bool:
+    return value is None or (isinstance(value, float) and math.isnan(value))
+
+
+def _svg_escape(value: object) -> str:
+    return (
+        str(value)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )

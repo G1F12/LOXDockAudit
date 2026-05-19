@@ -22,6 +22,7 @@ Available commands:
 loxdockaudit run
 loxdockaudit screen
 loxdockaudit check-config
+loxdockaudit inactive-control
 ```
 
 ## Single Construct Analysis
@@ -65,6 +66,26 @@ Screen outputs:
 {screen_id}_summaries.csv
 {screen_id}_report.md
 {construct_id}_poses.csv
+```
+
+## Inactive-Control Analysis
+
+Use `inactive-control` to compare active LOX against a catalytically inactive
+control with the same docking and productive-geometry rules.
+
+```bash
+loxdockaudit inactive-control --config configs/r5_inactive_control.yaml --out examples/real_hdock_inactive_control/expected_output --top-n 10
+```
+
+Inactive-control outputs:
+
+```text
+{comparison_id}_comparison.csv
+{comparison_id}_distance_distribution.csv
+{comparison_id}_distance_histogram.svg
+{comparison_id}_contact_persistence.csv
+{comparison_id}_pose_clusters.csv
+{comparison_id}_supplement.md
 ```
 
 ## Construct Config Format
@@ -205,7 +226,7 @@ loxdockaudit screen --config configs/example_screen.yaml --out examples/reports 
 
 ## Limitations
 
-LOXDockAudit does not prove enzymatic activity, Cu loading, LTQ/topaquinone maturation, collagen oxidation, crosslink formation, tendon strengthening, or in vivo safety.
+LOXDockAudit does not prove enzymatic activity, Cu loading, LTQ/topaquinone maturation, collagen oxidation, crosslink formation, tissue strengthening, or in vivo safety.
 
 It is a computational triage and reproducibility tool for docking-screen interpretation.
 

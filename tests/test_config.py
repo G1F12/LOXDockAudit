@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from loxdockaudit.config import load_construct_config, load_screen_config
+from loxdockaudit.config import ConfigError, load_construct_config, load_screen_config
 from loxdockaudit.models import ConstructConfig, QCConfig, ScreenConfig
 
 
@@ -233,3 +233,91 @@ structural_qc:
 
     with pytest.raises(ValueError, match="structural_qc"):
         load_construct_config(str(path))
+
+
+def test_load_construct_config_orientation_absent_defaults_disabled(tmp_path: Path) -> None:
+    path = tmp_path / "valid.yaml"
+    path.write_text(VALID_YAML, encoding="utf-8")
+
+    config = load_construct_config(str(path))
+
+    assert config.orientation.enabled is False
+    assert config.orientation.threshold_deg == 90.0
+    assert config.orientation.sidechain_atoms == ["CB", "NZ"]
+    assert config.orientation.activesite_centroid_atoms == ["CA"]
+
+
+def test_load_construct_config_orientation_parses_optional_block(tmp_path: Path) -> None:
+    path = tmp_path / "orientation.yaml"
+    path.write_text(
+        VALID_YAML
+        + """
+orientation:
+  enabled: true
+  threshold_deg: 75.0
+  sidechain_atoms: ["CB", "NZ"]
+  activesite_centroid_atoms: ["CA"]
+""",
+        encoding="utf-8",
+    )
+
+    config = load_construct_config(str(path))
+
+    assert config.orientation.enabled is True
+    assert config.orientation.threshold_deg == 75.0
+
+
+def test_load_construct_config_orientation_threshold_range(tmp_path: Path) -> None:
+    path = tmp_path / "orientation_invalid.yaml"
+    path.write_text(
+        VALID_YAML
+        + """
+orientation:
+  enabled: true
+  threshold_deg: 181.0
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigError, match="orientation.threshold_deg"):
+        load_construct_config(str(path))
+
+
+def test_load_screen_config_orientation_strict_criteria_optional_fields(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "screen.yaml"
+    construct_config = tmp_path / "construct.yaml"
+    construct_config.write_text(VALID_YAML, encoding="utf-8")
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "screen_id": "screen",
+                "candidate_construct_id": "candidate",
+                "constructs": [
+                    {
+                        "construct_id": "baseline",
+                        "control_type": "baseline",
+                        "config_path": "construct.yaml",
+                    },
+                    {
+                        "construct_id": "candidate",
+                        "control_type": "candidate",
+                        "config_path": "construct.yaml",
+                    },
+                ],
+                "strict_criteria": {
+                    "fully_productive_count_greater_than_baseline": True,
+                    "best_orientation_angle_max_deg": 75.0,
+                    "best_fully_productive_rank_max": 5,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    screen = load_screen_config(str(path))
+
+    assert screen.strict_criteria.fully_productive_count_greater_than_baseline is True
+    assert screen.strict_criteria.best_orientation_angle_max_deg == 75.0
+    assert screen.strict_criteria.best_fully_productive_rank_max == 5

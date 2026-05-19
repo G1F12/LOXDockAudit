@@ -3,118 +3,205 @@
 [![CI](https://github.com/G1F12/LOXDockAudit/actions/workflows/ci.yml/badge.svg)](https://github.com/G1F12/LOXDockAudit/actions/workflows/ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20241797.svg)](https://doi.org/10.5281/zenodo.20241797)
 
-Negative-control-aware docking and productive geometry auditor for LOX-collagen engineering.
+LOXDockAudit is a reproducible Python framework for auditing LOX-collagen docking poses by productive geometry rather than docking score alone. It is intended for computational docking analysis, reproducibility checks, and control-aware interpretation of lysyl oxidase (LOX) docking screens.
 
-## Current status
+This project is computational only. It does not demonstrate enzymatic activity, collagen oxidation, crosslink formation, biomechanical improvement, therapeutic utility, or in vivo safety.
 
-Validated MVP, v0.3.0 structural-QC release.
+## Why This Exists
 
-- Tests: 182 passing
-- Integration tests: passing
-- mypy: passing
-- ruff: passing
-- Windows CLI smoke test: passing
-- Real HDOCK Round 5 example: reproducible
+Generic docking engines rank poses by binding-oriented objectives. For LOX-collagen systems, a high-ranking pose is not necessarily catalytically interpretable unless the LOX active-site region is positioned near the target collagen Lys/Hyl residue and the substrate side chain has a plausible approach orientation.
 
-## What it solves
+LOXDockAudit adds post-docking checks that make these assumptions explicit:
 
-LOXDockAudit audits docking screens where the key question is not just whether a
-construct binds collagen, but whether the LOX active site is positioned near a
-target Lys/Hyl residue in a potentially productive geometry.
+- active-site-to-substrate distance scoring
+- optional Lys/Hyl side-chain orientation scoring
+- fully productive pose scoring when distance and orientation both pass
+- control-aware comparisons across baseline, scrambled, polyK, noCBD, inactive, and benchmark constructs
+- structural QC for active-site geometry, disulfides, and accessibility proxies
+- deterministic natural sorting of docking models
+- SHA256 input auditing and duplicate detection
+- CSV, Markdown, and SVG reporting
 
-## Why this exists
+## Installation
 
-Generic docking scores are often insufficient for enzyme-matrix engineering. In
-LOX-collagen systems, a construct may bind collagen but fail to place the LOX
-active site near a Lys/Hyl substrate residue. LOXDockAudit was built to separate
-generic binding from potentially productive catalytic geometry and to reduce
-cherry-picking through input auditing and control-aware reporting.
+LOXDockAudit requires Python 3.10 or newer.
 
-## Why strict controls matter
+```bash
+git clone https://github.com/G1F12/LOXDockAudit.git
+cd LOXDockAudit
+python -m pip install -e ".[dev]"
+```
 
-Fusion constructs can look good by generic contact count while failing the actual
-geometric requirement. Baseline, scrambled, polyK, noCBD, inactive, and benchmark
-controls make the interpretation explicit: a candidate should beat relevant
-negative controls, not just produce a plausible docking pose.
+Run checks:
 
-## Why naive docking ranking fails
+```bash
+python -m pytest -q
+python -m ruff check .
+python -m mypy src
+```
 
-Docking rank is not the same as catalytic usefulness. A top-ranked pose can be
-nonproductive if the active-site residues are far from the target collagen
-substrate atom. LOXDockAudit keeps HDOCK numeric ordering intact while reporting
-the first productive rank separately.
+Current v0.4.0 QA status: `215 passed`, `ruff` passed, `mypy` passed.
 
-## Why scrambled and polyK controls matter
+## Quickstart
 
-Scrambled and polyK controls help detect nonspecific binding. If a candidate does
-not outperform these controls in productive pose count or best active-site
-distance, the docking result is not strong evidence for a specific engineered
-interaction.
-
-## Why productive geometry beats docking score
-
-For LOX-collagen engineering, the most relevant docking signal is active-site
-proximity to the target Lys/Hyl residue. LOXDockAudit reports this explicitly as
-distance, productive pose count, best productive rank, and contact context.
-
-## Usage
+Validate a construct config:
 
 ```bash
 loxdockaudit check-config configs/example.yaml
-loxdockaudit run --config configs/example.yaml --out examples/reports
 ```
 
-## Real Round 5 reproduction
-
-Packaged reproducible example:
+Run a single construct:
 
 ```bash
-loxdockaudit check-config examples/real_hdock_round5/config.yaml
-loxdockaudit run --config examples/real_hdock_round5/config.yaml --out examples/real_hdock_round5/expected_output --top-n 10
+loxdockaudit run \
+  --config configs/example.yaml \
+  --out examples/reports \
+  --top-n 10
 ```
 
-Dataset: R5 LOX169-417 vs collagen-I 6VZX
+Run the Round 5 inactive-control comparison:
 
-Result after numeric model sorting:
-
-- Productive poses: 2/10
-- Best distance: 6.159 A
-- Best productive rank: 3
-
-Real output excerpt:
-
-```text
-## Productive Geometry
-
-- Productive poses: 2 / 10
-- Best distance: 6.159 A
-- Best productive rank: 3
-- Productive distance threshold: 8.000 A
-- LOX contact frequency: 1.000
-- CBD contact frequency: 0.000
-- CBD coupling: 0.000
+```bash
+loxdockaudit inactive-control \
+  --config configs/r5_inactive_control.yaml \
+  --out examples/real_hdock_inactive_control/expected_output \
+  --top-n 10
 ```
 
-![Round 5 active-site-to-target distances](docs/figures/round5_example.png)
+## Configuration
 
-Interpretation: the real HDOCK dataset is parsed successfully, and
-productive-rank calculation now uses numeric model ordering rather than
-lexicographic ordering.
+Constructs are defined in YAML. The core fields identify docking models, receptor and ligand chains, target substrate residue, and active-site residues.
 
-See [REPRODUCING_ROUND5.md](REPRODUCING_ROUND5.md) for exact commands, expected
-outputs, and expected metrics.
+```yaml
+construct_id: r5_real_lox169
+construct_type: lox_baseline
+models_dir: examples/real_hdock_round5/cleaned_models
+productive_distance_threshold: 8.0
 
-## Technical Report
+receptor:
+  chains: ["A", "B"]
+  target_residues:
+    - chain: "A"
+      resi: 11
+      resn: "LYS"
+      atom: "NZ"
 
-A full technical report describing the method, implementation, real data results,
-and the lexicographic ordering bug discovery is available in
-[docs/technical_report.md](docs/technical_report.md).
+ligand:
+  chains: ["D"]
+
+active_site:
+  residues:
+    - {label: "His292", resi: 292}
+    - {label: "His294", resi: 294}
+    - {label: "His296", resi: 296}
+```
+
+## Orientation Scoring
+
+v0.4.0 adds optional substrate orientation scoring:
+
+```yaml
+orientation:
+  enabled: true
+  threshold_deg: 90.0
+  sidechain_atoms: ["CB", "NZ"]
+  activesite_centroid_atoms: ["CA"]
+```
+
+The orientation score is the angle between:
+
+- the vector from the active-site centroid to the target Lys/Hyl NZ atom
+- the vector from target Lys/Hyl C-beta to NZ
+
+Small angles indicate that the side chain points toward the active-site region. When orientation is enabled, a fully productive pose must satisfy both the distance threshold and the orientation threshold. When orientation is disabled, LOXDockAudit preserves the v0.3 distance-only behavior.
+
+## Real Round 5 Reproduction
+
+The repository includes a reproducible HDOCK Round 5 example:
+
+- construct: LOX169-417
+- receptor: collagen-I 6VZX lysine-site model
+- poses analyzed: 10
+- docking engine: HDOCK
+
+Distance-only v0.3-compatible results:
+
+| Construct | Productive poses | Best distance | Best productive rank |
+|---|---:|---:|---:|
+| Active LOX169-417 | 2/10 | 6.159 A | 3 |
+| Inactive H292A/H294A/H296A | 1/10 | 6.421 A | 7 |
+
+With v0.4 orientation scoring enabled, the active construct has one fully productive pose and the inactive catalytic-control construct has zero fully productive poses under the current geometric heuristic.
+
+Interpretation: the active construct retained more favorable productive geometry under this computational metric. This is not evidence of enzymatic activity or biological efficacy.
+
+## Outputs
+
+LOXDockAudit writes:
+
+- per-pose CSV files with distance, productivity, optional orientation, and contacts
+- summary CSV files with productive and fully productive counts
+- screen and inactive-control comparison CSV files
+- Markdown reports and supplements
+- SVG distance histograms and geometry scatter plots generated with pure Python
+
+## Reproducibility Focus
+
+LOXDockAudit treats docking poses as auditable evidence:
+
+- numeric natural sorting prevents `model_10.pdb` from being ranked before `model_2.pdb`
+- SHA256 input auditing detects duplicate or reused structures
+- expected outputs are included for the real Round 5 examples
+- regression tests lock down v0.3 distance metrics while adding v0.4 orientation outputs
 
 ## Limitations
 
-LOXDockAudit does not prove enzymatic activity, Cu loading, LTQ/topaquinone
-maturation, collagen oxidation, crosslink formation, tendon strengthening, or in
-vivo safety.
+LOXDockAudit is a post-docking analysis framework. It does not prove catalysis.
 
-It is a computational triage and reproducibility tool for docking-screen
-interpretation.
+Important limitations:
+
+- Distance and orientation thresholds are geometric heuristics.
+- Docking poses are static and do not model conformational dynamics.
+- Structural QC uses practical geometry proxies, not full physical validation.
+- HDOCK and similar docking engines do not model copper loading, LTQ/topaquinone chemistry, or catalytic turnover.
+- Productive geometry is not equivalent to enzymatic activity, collagen oxidation, crosslink formation, tissue strengthening, medical efficacy, or in vivo safety.
+
+## Documentation
+
+- [Technical report](docs/technical_report.md)
+- [Usage guide](docs/USAGE.md)
+- [Round 5 reproduction notes](REPRODUCING_ROUND5.md)
+- [Inactive-control workflow](docs/INACTIVE_CONTROL.md)
+- [PDB preprocessing notes](docs/PDB_PREPROCESSING.md)
+
+## Citation
+
+If you use LOXDockAudit in research or teaching, cite the software metadata in [CITATION.cff](CITATION.cff).
+
+```bibtex
+@software{loxdockaudit_2026,
+  title = {LOXDockAudit: Control-aware productive-geometry analysis for LOX-collagen docking screens},
+  author = {Karatseyeu, Aliaksandr},
+  year = {2026},
+  version = {0.4.0},
+  url = {https://github.com/G1F12/LOXDockAudit}
+}
+```
+
+## Roadmap
+
+Near-term priorities:
+
+- add compact PyMOL/ChimeraX visualization exports for selected poses
+- improve documentation around orientation-score interpretation
+- add benchmark examples beyond Round 5
+- separate lightweight example outputs from large local validation artifacts
+- add optional JSON outputs for downstream analysis
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
+
+## Disclaimer
+
+LOXDockAudit is research software for computational docking analysis. It is not a diagnostic, therapeutic, clinical, or wet-lab validation tool.
