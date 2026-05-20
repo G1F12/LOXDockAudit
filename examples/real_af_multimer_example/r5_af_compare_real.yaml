@@ -1,0 +1,25 @@
+comparison_id: real_af_compare
+
+# Derived minimal example for the LOX169-417 / collagen-I 6VZX target region.
+# Paths are resolved relative to this YAML file.
+hdock_models_dir: ../real_hdock_round5/cleaned_models
+alphafold_model_path: ranked_0.pdb
+
+target_residue:
+  chain: "A"
+  resi: 11
+  resn: "LYS"
+  atom: "NZ"
+
+active_site_chain: "D"
+active_site_residues: [292, 294, 296, 320, 355]
+
+productive_distance_threshold: 8.0
+contact_distance_threshold: 5.0
+orientation_enabled: true
+orientation_threshold_deg: 90.0
+top_n: 10
+
+compare_contact_fingerprints: true
+compare_interface_overlap: true
+compare_productive_geometry: true

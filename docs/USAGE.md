@@ -23,6 +23,7 @@ loxdockaudit run
 loxdockaudit screen
 loxdockaudit check-config
 loxdockaudit inactive-control
+loxdockaudit af-compare
 ```
 
 ## Single Construct Analysis
@@ -87,6 +88,63 @@ Inactive-control outputs:
 {comparison_id}_pose_clusters.csv
 {comparison_id}_supplement.md
 ```
+
+## Independent Structural Prediction Comparison
+
+Use `af-compare` to compare productive HDOCK poses against an
+AlphaFold-Multimer or ColabFold predicted complex for the same LOX construct
+and collagen target region.
+
+```bash
+loxdockaudit af-compare \
+  --config examples/real_af_multimer_example/r5_af_compare_real.yaml \
+  --out examples/real_af_multimer_example/expected_output
+```
+
+AF comparison outputs:
+
+```text
+{comparison_id}_af_compare.csv
+{comparison_id}_interface_overlap.csv
+{comparison_id}_contact_persistence.csv
+{comparison_id}_report.md
+```
+
+Minimal AF comparison config:
+
+```yaml
+comparison_id: example_hdock_vs_af
+hdock_models_dir: examples/real_hdock_round5/cleaned_models
+alphafold_model_path: examples/af_multimer/ranked_0.pdb
+
+target_residue:
+  chain: "A"
+  resi: 11
+  resn: "LYS"
+  atom: "NZ"
+
+active_site_chain: "D"
+active_site_residues: [292, 294, 296, 320, 355]
+
+productive_distance_threshold: 8.0
+contact_distance_threshold: 5.0
+orientation_enabled: true
+orientation_threshold_deg: 90.0
+
+compare_contact_fingerprints: true
+compare_interface_overlap: true
+compare_productive_geometry: true
+```
+
+The convergence categories are heuristic:
+
+- `strong convergence`: substantial residue overlap under the configured contact metric.
+- `partial convergence`: some shared interface residues.
+- `divergent interfaces`: no shared interface residues detected.
+
+These labels describe computational agreement only. They do not establish
+enzymatic activity, catalytic mechanism, collagen oxidation, crosslink
+formation, or biological efficacy.
 
 ## Construct Config Format
 
@@ -195,6 +253,11 @@ Number of ligand CBD/FMOD-domain atom pairs contacting receptor atoms. This is `
 
 `cbd_coupling`:
 Pearson correlation between CBD contacts and active-site distance across poses. This is a triage metric, not a mechanistic proof.
+
+`interface_jaccard_index`:
+Residue-overlap score between AF-Multimer and productive HDOCK interfaces. It is
+a reproducibility and cross-method comparison metric, not validation of
+catalysis.
 
 ## Input Audit
 

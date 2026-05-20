@@ -9,6 +9,7 @@ from typing import Any
 import click
 import numpy as np
 
+from loxdockaudit.af_compare import load_af_compare_config, run_af_compare
 from loxdockaudit.config import load_construct_config, load_screen_config
 from loxdockaudit.contacts import analyze_pose_contacts, compute_contact_frequencies
 from loxdockaudit.distances import active_site_to_target_distance
@@ -286,6 +287,39 @@ def inactive_control(config: str, out: str, top_n: int | None) -> None:
         sys.exit(1)
 
 
+@click.command("af-compare")
+@click.option("--config", required=True, help="Path to AF comparison YAML config")
+@click.option("--out", required=True, help="Output directory")
+def af_compare(config: str, out: str) -> None:
+    """Compare productive HDOCK poses against an AF-Multimer model."""
+    try:
+        comparison_config = load_af_compare_config(config)
+        result = run_af_compare(comparison_config, out)
+        summary = result.convergence
+        productive_count = sum(1 for pose in result.hdock_poses if pose.productive)
+        click.echo(f"Comparison: {comparison_config.comparison_id}")
+        click.echo(
+            "HDOCK productive poses: "
+            f"{productive_count}/{len(result.hdock_poses)}"
+        )
+        click.echo(
+            "AF productive: "
+            f"{result.af_geometry.is_productive}; "
+            f"fully productive: {result.af_geometry.is_fully_productive}"
+        )
+        click.echo(f"Interface overlap count: {summary.overlap_count}")
+        click.echo(f"Interface Jaccard index: {summary.jaccard_index:.3f}")
+        click.echo(f"Convergence category: {result.convergence_category}")
+        click.echo(
+            "Interpretation: computational agreement only; does not establish "
+            "enzymatic activity."
+        )
+        click.echo(f"Output saved to: {out}")
+    except Exception as exc:
+        click.echo(f"ERROR: {exc}")
+        sys.exit(1)
+
+
 def _audit_config_from_construct(construct_config: ConstructConfig) -> dict[str, Any]:
     return {
         "construct_id": construct_config.construct_id,
@@ -450,6 +484,7 @@ cli.add_command(run)
 cli.add_command(screen)
 cli.add_command(check_config)
 cli.add_command(inactive_control)
+cli.add_command(af_compare)
 
 
 if __name__ == "__main__":

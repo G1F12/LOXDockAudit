@@ -1,0 +1,7 @@
+{
+  "format": "derived_minimal_example_metadata",
+  "description": "This repository example uses a derived minimal AF-Multimer-style ranked_0.pdb for lightweight redistribution. It is not a full raw ColabFold output bundle.",
+  "order": ["ranked_0"],
+  "source_context": "LOX169-417 versus collagen-I 6VZX lysine-site target region",
+  "redistribution_note": "Large raw AF-Multimer/ColabFold outputs such as MSA directories, logs, and full run folders are intentionally not included."
+}

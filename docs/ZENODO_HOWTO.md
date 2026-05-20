@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- GitHub repository with a clean v0.4.0 release tag
+- GitHub repository with a clean v0.5.1 release tag
 - Zenodo account connected to GitHub
 - Updated `CITATION.cff` and `.zenodo.json`
 
@@ -16,8 +16,8 @@ Go to <https://zenodo.org/account/settings/github/> and enable the `LOXDockAudit
 
 Go to <https://github.com/G1F12/LOXDockAudit/releases> and draft a release.
 
-- Tag: `v0.4.0`
-- Title: `LOXDockAudit v0.4.0 - Orientation and inactive-control release`
+- Tag: `v0.5.1`
+- Title: `LOXDockAudit v0.5.1 - AF comparison example and visual summary`
 
 Use release notes that describe the software changes without implying experimental validation. The release should state that LOXDockAudit is a computational docking-analysis and reproducibility framework.
 
@@ -25,7 +25,7 @@ Use release notes that describe the software changes without implying experiment
 
 After publishing the GitHub release, wait a few minutes for Zenodo to archive it. Confirm that the record shows:
 
-- version `v0.4.0`
+- version `v0.5.1`
 - MIT license
 - GitHub repository link
 - software title from `CITATION.cff`

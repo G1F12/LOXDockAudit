@@ -3,7 +3,7 @@ title: "LOXDockAudit: A Reproducible Framework for Control-Aware
         Productive Geometry Analysis in LOX–Collagen Docking Screens"
 author: "Sasha"
 date: "May 2026"
-version: "v0.4.0"
+version: "v0.5.1"
 repository: "https://github.com/G1F12/LOXDockAudit"
 ---
 
@@ -12,7 +12,7 @@ repository: "https://github.com/G1F12/LOXDockAudit"
 
 **Author:** Sasha  
 **Date:** May 2026  
-**Version:** v0.4.0  
+**Version:** v0.5.1  
 **Repository:** https://github.com/G1F12/LOXDockAudit  
 
 ---
@@ -87,7 +87,13 @@ The input audit records a SHA256 hash for every file used in the analysis. It pe
 
 ### 3.6 Substrate Orientation Score
 
-Version v0.4.0 adds an optional substrate orientation score for target Lys/Hyl residues. The score measures the angle between the approach vector from the active-site centroid to the target NZ atom and the side-chain vector from Lys C-beta to NZ. Smaller angles indicate that the side chain points toward the active site. When orientation scoring is enabled, a fully productive pose must satisfy both the distance threshold and the orientation threshold; when it is disabled, all v0.3 distance metrics and pass/fail behavior are preserved.
+LOXDockAudit supports an optional substrate orientation score for target Lys/Hyl residues. The score measures the angle between the approach vector from the active-site centroid to the target NZ atom and the side-chain vector from Lys C-beta to NZ. Smaller angles indicate that the side chain points toward the active site. When orientation scoring is enabled, a fully productive pose must satisfy both the distance threshold and the orientation threshold; when it is disabled, distance-only behavior is preserved.
+
+### 3.7 Independent structural prediction comparison
+
+Version v0.5.1 includes an AlphaFold-Multimer/ColabFold comparison workflow through `loxdockaudit af-compare`. The purpose is to compare productive HDOCK docking poses against an independently generated predicted complex for the same LOX construct and collagen target region. The workflow measures AF active-site distance, optional substrate orientation, HDOCK productive pose count, interface residue overlap, contact-pair persistence across productive HDOCK poses, and an interface convergence category.
+
+The convergence categories are intentionally conservative. Strong convergence means substantial interface overlap under the configured contact metric, partial convergence means some shared interface residues, and divergent interfaces means no shared residues were detected. These are heuristic computational labels. They do not establish enzymatic activity, catalytic mechanism, collagen oxidation, crosslink formation, biomechanical improvement, therapeutic utility, or in vivo safety.
 
 ## 4. Software Implementation
 
@@ -95,7 +101,7 @@ LOXDockAudit is implemented as a tested Python package with a command-line inter
 
 ### 4.1 Architecture overview
 
-LOXDockAudit is a Python package using a `src` layout and `pyproject.toml`, with 9 modules, a Click CLI with 3 commands (`run`, `screen`, `check-config`), and a YAML-based configuration system. All analysis is driven by config files; no hardcoded paths or residue numbers appear in the core logic.
+LOXDockAudit is a Python package using a `src` layout and `pyproject.toml`, with focused modules, a Click CLI, and a YAML-based configuration system. All analysis is driven by config files; no hardcoded paths or residue numbers appear in the core logic.
 
 ### 4.2 Key modules
 
@@ -111,6 +117,11 @@ LOXDockAudit is a Python package using a `src` layout and `pyproject.toml`, with
 | criteria.py      | Pass/fail criteria engine                   |
 | screen.py        | Multi-construct screen orchestration        |
 | reporting.py     | CSV, Markdown report generation             |
+| af_parser.py     | AF-Multimer/ColabFold PDB and JSON parsing  |
+| interface_extractor.py | Interface residue and contact fingerprint extraction |
+| convergence.py   | HDOCK/AF interface overlap and convergence labels |
+| af_geometry.py   | AF-Multimer productive-geometry scoring     |
+| af_compare.py    | End-to-end HDOCK versus AF-Multimer workflow |
 
 ### 4.3 CLI interface
 
@@ -132,9 +143,15 @@ loxdockaudit screen --config configs/round5_screen.yaml --output results/round5_
 loxdockaudit check-config --config configs/round5_screen.yaml
 ```
 
+`loxdockaudit af-compare` compares productive HDOCK poses against an AF-Multimer or ColabFold predicted complex.
+
+```bash
+loxdockaudit af-compare --config examples/real_af_multimer_example/r5_af_compare_real.yaml --out examples/real_af_multimer_example/expected_output
+```
+
 ### 4.4 Test coverage
 
-LOXDockAudit v0.4.0 has 215 tests. Unit tests cover `pdb_parser`, `distances`, `orientation`, `contacts`, `input_audit`, `config`, `reporting`, criteria/screen behavior, structural QC, inactive-control analysis, and Round 5 v0.4 regression behavior. Integration tests cover the CLI workflows, control-aware screen analysis, inactive catalytic controls, and backward compatibility with the v0.3 distance-only Round 5 metrics. Static checks report mypy: 0 type errors and ruff: 0 linting violations, and CI runs through a GitHub Actions workflow on push.
+LOXDockAudit v0.5.1 extends the test suite with synthetic AF-Multimer fixtures. Unit tests cover `pdb_parser`, `distances`, `orientation`, `contacts`, `input_audit`, `config`, `reporting`, criteria/screen behavior, structural QC, inactive-control analysis, AF parsing, interface extraction, convergence logic, and Round 5 regression behavior. Integration tests cover the CLI workflows, control-aware screen analysis, inactive catalytic controls, AF comparison outputs, and backward compatibility with the v0.3 distance-only Round 5 metrics. Static checks are expected to report mypy: 0 type errors and ruff: 0 linting violations, and CI runs through a GitHub Actions workflow on push.
 
 ## 5. Results: Real Round 5 Reproduction
 
@@ -235,8 +252,9 @@ The regression test `test_natural_sort_order()` verifies that `model_1, model_10
 4. Structural QC uses CA/CB distances and a burial proxy, not true SASA or normal-mode analysis.
 5. pLDDT/PAE parsing requires AlphaFold/ColabFold output; homology models are not supported.
 6. CBD coupling metric (Pearson r over 10 poses) is statistically underpowered; interpret with caution.
-7. LOXDockAudit does not prove: enzymatic activity, Cu loading, LTQ/topaquinone maturation, collagen oxidation, crosslink formation, mechanical strengthening, or in vivo safety.
-8. All analysis is based on static docking poses; molecular dynamics and conformational flexibility are not modeled.
+7. AF-Multimer interface convergence is a computational agreement metric, not wet-lab validation and not proof of mechanism.
+8. LOXDockAudit does not prove: enzymatic activity, Cu loading, LTQ/topaquinone maturation, collagen oxidation, crosslink formation, mechanical strengthening, or in vivo safety.
+9. All analysis is based on static docking poses or static predicted complexes; molecular dynamics and conformational flexibility are not modeled.
 
 ## 8. Future Work
 
@@ -244,6 +262,7 @@ The regression test `test_natural_sort_order()` verifies that `model_1, model_10
 2. PyMOL script generation for visualizing productive poses and active-site geometry.
 3. Statistical comparison across controls using bootstrap resampling rather than deterministic criteria.
 4. Support for AlphaFold3 output format (updated JSON schema).
+5. Add curated real AF-Multimer example outputs once lightweight redistribution constraints are resolved.
 
 ## References
 

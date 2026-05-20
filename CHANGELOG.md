@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.5.1 - Realistic AF Example and Visual Summary
+
+- Added a lightweight derived AF-Multimer-style comparison example for LOX169-417 versus the collagen-I 6VZX lysine-site target region.
+- Added expected `af-compare` outputs for the example, including summary CSV, interface-overlap CSV, contact-persistence CSV, Markdown report, and a PNG visual summary.
+- Added `docs/visual_summary.md` and a GitHub-readable workflow overview figure for portfolio and mentor review.
+- Standardized AF comparison Markdown output as `{comparison_id}_report.md`.
+- Updated documentation with the runnable real-example command and conservative interpretation language.
+- Added `loxdockaudit af-compare` for HDOCK versus AlphaFold-Multimer/ColabFold cross-method comparison.
+- Added AF/ColabFold PDB and JSON parsing helpers.
+- Added interface residue extraction and residue-pair contact fingerprinting for HDOCK and AF structures.
+- Added productive-geometry scoring for AF-Multimer models using the existing distance and orientation metrics.
+- Added interface overlap, contact persistence, and conservative convergence categories.
+- Added CSV and Markdown outputs for AF comparison workflows.
+- Added synthetic unit and integration tests for AF parsing, interface overlap, orientation comparison, convergence categorization, and CLI output.
+
 ## v0.4.0 - Orientation and Inactive-Control Release
 
 - Added optional substrate orientation scoring for target Lys/Hyl side-chain geometry.

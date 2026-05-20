@@ -1,0 +1,2 @@
+comparison_id,hdock_total_poses,hdock_productive_count,hdock_fully_productive_count,hdock_best_distance,hdock_best_productive_rank,hdock_best_fully_productive_rank,af_rank,af_iptm,af_distance_to_active_site,af_orientation_angle_deg,af_productive,af_fully_productive,interface_overlap_count,interface_jaccard_index,convergence_category
+real_af_compare,10,2,1,6.159133087608157,3,5,0,,6.159133087608157,96.0967692125895,True,False,26,0.6666666666666666,strong convergence

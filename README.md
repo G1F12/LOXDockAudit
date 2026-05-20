@@ -40,7 +40,7 @@ python -m ruff check .
 python -m mypy src
 ```
 
-Current v0.4.0 QA status: `215 passed`, `ruff` passed, `mypy` passed.
+Current v0.5.1 QA status: `227 passed`, `ruff` passed, `mypy` passed.
 
 ## Quickstart
 
@@ -66,6 +66,14 @@ loxdockaudit inactive-control \
   --config configs/r5_inactive_control.yaml \
   --out examples/real_hdock_inactive_control/expected_output \
   --top-n 10
+```
+
+Compare productive HDOCK poses against an AlphaFold-Multimer/ColabFold model:
+
+```bash
+loxdockaudit af-compare \
+  --config examples/real_af_multimer_example/r5_af_compare_real.yaml \
+  --out examples/real_af_multimer_example/expected_output
 ```
 
 ## Configuration
@@ -98,7 +106,7 @@ active_site:
 
 ## Orientation Scoring
 
-v0.4.0 adds optional substrate orientation scoring:
+Optional substrate orientation scoring can be enabled in construct configs:
 
 ```yaml
 orientation:
@@ -135,6 +143,20 @@ With v0.4 orientation scoring enabled, the active construct has one fully produc
 
 Interpretation: the active construct retained more favorable productive geometry under this computational metric. This is not evidence of enzymatic activity or biological efficacy.
 
+## Independent Structural Prediction Comparison
+
+v0.5.1 includes an `af-compare` workflow for comparing productive HDOCK docking poses against an independent AlphaFold-Multimer or ColabFold predicted complex for the same LOX construct and collagen target region.
+
+This workflow reports:
+
+- AF active-site distance and optional Lys/Hyl side-chain orientation
+- HDOCK productive pose count and best productive rank
+- interface residue overlap between AF and productive HDOCK poses
+- contact-pair persistence across productive HDOCK poses
+- conservative convergence categories: strong convergence, partial convergence, or divergent interfaces
+
+Cross-method agreement is interpreted as computational agreement under the current geometric metric. It does not establish enzymatic activity, catalytic turnover, collagen oxidation, crosslink formation, biomechanical improvement, therapeutic utility, or in vivo safety. Divergence likewise does not by itself invalidate a docking result because HDOCK and AF-Multimer have different objective functions and failure modes.
+
 ## Outputs
 
 LOXDockAudit writes:
@@ -142,6 +164,7 @@ LOXDockAudit writes:
 - per-pose CSV files with distance, productivity, optional orientation, and contacts
 - summary CSV files with productive and fully productive counts
 - screen and inactive-control comparison CSV files
+- AF comparison CSV files for summary metrics, interface overlap, and contact persistence
 - Markdown reports and supplements
 - SVG distance histograms and geometry scatter plots generated with pure Python
 
@@ -168,6 +191,7 @@ Important limitations:
 
 ## Documentation
 
+- [Visual summary](docs/visual_summary.md)
 - [Technical report](docs/technical_report.md)
 - [Usage guide](docs/USAGE.md)
 - [Round 5 reproduction notes](REPRODUCING_ROUND5.md)
@@ -183,7 +207,7 @@ If you use LOXDockAudit in research or teaching, cite the software metadata in [
   title = {LOXDockAudit: Control-aware productive-geometry analysis for LOX-collagen docking screens},
   author = {Karatseyeu, Aliaksandr},
   year = {2026},
-  version = {0.4.0},
+  version = {0.5.1},
   url = {https://github.com/G1F12/LOXDockAudit}
 }
 ```
