@@ -1,0 +1,9 @@
+# GitHub release-note category configuration.
+changelog:
+  categories:
+    - title: Features
+      labels: [enhancement]
+    - title: Bug Fixes
+      labels: [bug]
+    - title: Documentation
+      labels: [documentation]

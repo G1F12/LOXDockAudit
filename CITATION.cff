@@ -1,32 +1,15 @@
 cff-version: 1.2.0
-message: "If you use LOXDockAudit, please cite the software using this metadata."
+message: "If you use this software, please cite it as below."
 type: software
-title: "LOXDockAudit: Control-aware productive-geometry analysis for LOX-collagen docking screens"
-version: "0.5.1"
-date-released: "2026-05-19"
+title: "LOXDockAudit"
+version: 0.5.1
+date-released: "2026-05-20"
 license: MIT
 repository-code: "https://github.com/G1F12/LOXDockAudit"
-url: "https://github.com/G1F12/LOXDockAudit"
-doi: "10.5281/zenodo.20241797"
-abstract: >
-  LOXDockAudit is a computational docking-analysis and reproducibility
-  framework for LOX-collagen screens. It evaluates whether docked poses satisfy
-  active-site distance and optional substrate-orientation geometry criteria,
-  supports control-aware comparisons including catalytically inactive controls,
-  performs structural quality checks, and generates auditable CSV, Markdown,
-  and SVG reports. The software is intended for computational interpretation of
-  docking poses and does not provide experimental validation of enzymatic
-  activity or biological efficacy.
-keywords:
-  - lysyl oxidase
-  - collagen
-  - docking
-  - structural biology
-  - bioinformatics
-  - computational biology
-  - reproducibility
-  - protein engineering
 authors:
-  - family-names: "Karatseyeu"
-    given-names: "Aliaksandr"
-    affiliation: "Independent Researcher"
+  - family-names: "Koroteev"
+    given-names: "Sasha"
+keywords:
+  - protein docking
+  - structural biology
+  - reproducibility

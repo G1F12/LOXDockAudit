@@ -1,33 +1,9 @@
 {
-  "title": "LOXDockAudit: Control-aware productive-geometry analysis for LOX-collagen docking screens",
-  "version": "v0.4.0",
-  "description": "LOXDockAudit is a computational docking-analysis and reproducibility framework for LOX-collagen screens. It evaluates whether docked poses satisfy active-site distance and optional substrate-orientation geometry criteria, supports control-aware comparisons including catalytically inactive controls, performs structural quality checks, and generates auditable CSV, Markdown, and SVG reports. The software does not provide experimental validation of enzymatic activity or biological efficacy.",
-  "upload_type": "software",
-  "access_right": "open",
+  "title": "LOXDockAudit",
+  "version": "0.5.1",
   "license": "MIT",
-  "keywords": [
-    "lysyl oxidase",
-    "collagen",
-    "docking",
-    "structural biology",
-    "bioinformatics",
-    "computational biology",
-    "reproducibility",
-    "protein engineering",
-    "HDOCK"
-  ],
-  "creators": [
-    {
-      "name": "Karatseyeu, Aliaksandr",
-      "affiliation": "Independent Researcher"
-    }
-  ],
-  "related_identifiers": [
-    {
-      "identifier": "https://github.com/G1F12/LOXDockAudit",
-      "relation": "isSupplementTo",
-      "scheme": "url"
-    }
-  ],
-  "language": "eng"
+  "upload_type": "software",
+  "description": "LOXDockAudit audits LOX-collagen docking and AF-Multimer comparison outputs with reproducible productive-geometry metrics for cautious structural-bioinformatics interpretation.",
+  "creators": [{"name": "Sasha Koroteev"}],
+  "keywords": ["protein docking", "structural biology", "Python"]
 }

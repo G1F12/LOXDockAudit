@@ -1,33 +1,40 @@
-# LOXDockAudit Visual Summary
+# Visual Summary
 
-LOXDockAudit is a reproducibility-focused computational biology tool for
-auditing LOX-collagen docking poses by productive geometry rather than docking
-rank alone.
+This page summarizes the reproducibility-oriented LOXDockAudit workflow and the key v0.5.1 example results.
 
-## Workflow Diagram
+## Figure 1
 
-![LOXDockAudit workflow overview](assets/overview_workflow.svg)
+![Pipeline workflow](figures/figure1_pipeline.png)
 
-## Active vs Inactive Summary
+Figure 1 shows the analysis path from input PDB files through QC, productive geometry, controls, AF2 comparison, and report outputs.
 
-| Metric | Active | Inactive |
-| --- | ---: | ---: |
-| Productive poses | 2/10 | 1/10 |
-| Best productive rank | 3 | 7 |
-| Fully productive count | 1 | 0 |
-| QC status | PASS | PASS |
+## Figure 2
 
-## HDOCK vs AF Summary
+![Active vs inactive comparison](figures/figure2_active_inactive.png)
 
-| Metric | Value |
-| --- | ---: |
-| Interface overlap | 26 residues |
-| Jaccard index | 0.667 |
+Figure 2 compares the active LOX169-417 Round 5 workflow with the H292A/H294A/H296A inactive control.
+The active construct has 2/10 productive poses, best productive rank 3, one fully productive pose, and PASS structural QC.
+The inactive control has 1/10 productive poses, best productive rank 7, zero fully productive poses, and PASS structural QC.
+
+## Figure 3
+
+![AF2 vs HDOCK overlap](figures/figure3_af_hdock_overlap.png)
+
+Figure 3 summarizes HDOCK versus AF-Multimer-style interface overlap.
+The example reports 26 shared interface residues, Jaccard index 0.667, and a strong convergence label.
+This is computational interface consistency only, not evidence of catalytic activity.
+
+## Key Results
+
+| Result | Value |
+| --- | --- |
+| Active productive poses | 2/10 |
+| Inactive productive poses | 1/10 |
+| Active fully productive count | 1 |
+| Inactive fully productive count | 0 |
+| AF/HDOCK interface overlap | 26 residues |
+| AF/HDOCK Jaccard index | 0.667 |
 | Convergence label | strong convergence |
-
-Strong convergence indicates computational agreement between docking and
-AF-Multimer interface regions under the configured contact metric. This is
-cross-method structural consistency, not biological validation.
 
 ## Limitations
 
@@ -36,10 +43,3 @@ cross-method structural consistency, not biological validation.
 - No enzymatic validation.
 - Distance and orientation thresholds are heuristic.
 - Not proof of collagen oxidation or crosslink formation.
-
-## Portfolio Takeaway
-
-The project combines deterministic input auditing, structural QC, docking pose
-analysis, active/inactive controls, and independent AF-Multimer comparison into
-one reviewable workflow. Its outputs are designed to support cautious scientific
-interpretation rather than overclaiming mechanism or activity.
