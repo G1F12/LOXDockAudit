@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="420" viewBox="0 0 840 420" role="img" aria-labelledby="title desc">
+  <title id="title">Example distance histogram placeholder</title>
+  <desc id="desc">Placeholder SVG distance histogram showing separation between active and inactive control docking poses.</desc>
+  <rect width="840" height="420" fill="#ffffff"/>
+  <rect x="84" y="52" width="660" height="284" fill="#f8fafc" stroke="#cbd5e1"/>
+  <line x1="84" y1="336" x2="744" y2="336" stroke="#334155" stroke-width="2"/>
+  <line x1="84" y1="52" x2="84" y2="336" stroke="#334155" stroke-width="2"/>
+  <text x="420" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#0f172a">Example SVG Distance Histogram</text>
+  <text x="420" y="394" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#334155">Active-site-to-substrate distance (A)</text>
+  <text x="22" y="194" transform="rotate(-90 22 194)" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#334155">Pose count</text>
+
+  <g fill="#2563eb" opacity="0.75">
+    <rect x="150" y="210" width="38" height="126"/>
+    <rect x="192" y="170" width="38" height="166"/>
+    <rect x="234" y="116" width="38" height="220"/>
+    <rect x="276" y="155" width="38" height="181"/>
+    <rect x="318" y="248" width="38" height="88"/>
+  </g>
+  <g fill="#dc2626" opacity="0.70">
+    <rect x="402" y="264" width="38" height="72"/>
+    <rect x="444" y="194" width="38" height="142"/>
+    <rect x="486" y="132" width="38" height="204"/>
+    <rect x="528" y="178" width="38" height="158"/>
+    <rect x="570" y="246" width="38" height="90"/>
+  </g>
+
+  <line x1="360" y1="52" x2="360" y2="336" stroke="#475569" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="366" y="72" font-family="Arial, sans-serif" font-size="12" fill="#475569">8.0 A threshold</text>
+
+  <g font-family="Arial, sans-serif" font-size="12" fill="#334155">
+    <text x="145" y="356">4</text>
+    <text x="245" y="356">6</text>
+    <text x="345" y="356">8</text>
+    <text x="445" y="356">10</text>
+    <text x="545" y="356">12</text>
+    <text x="645" y="356">14</text>
+  </g>
+
+  <g font-family="Arial, sans-serif" font-size="13" fill="#0f172a">
+    <rect x="610" y="74" width="16" height="16" fill="#2563eb" opacity="0.75"/>
+    <text x="634" y="87">Active construct</text>
+    <rect x="610" y="100" width="16" height="16" fill="#dc2626" opacity="0.70"/>
+    <text x="634" y="113">Inactive control</text>
+  </g>
+
+  <text x="420" y="382" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#64748b">Illustrative placeholder; replace with project-generated histogram when available.</text>
+</svg>
