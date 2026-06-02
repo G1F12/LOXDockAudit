@@ -3,7 +3,15 @@
 [![CI](https://github.com/G1F12/LOXDockAudit/actions/workflows/ci.yml/badge.svg)](https://github.com/G1F12/LOXDockAudit/actions/workflows/ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20241797.svg)](https://doi.org/10.5281/zenodo.20241797)
 
-LOXDockAudit is a reproducible Python framework for auditing LOX-collagen docking poses by productive geometry rather than docking score alone. It is intended for computational docking analysis, reproducibility checks, and control-aware interpretation of lysyl oxidase (LOX) docking screens.
+LOXDockAudit is a reproducible Python framework for auditing LOX-collagen docking poses by productive geometry rather than docking score alone.
+
+**Problem / Solution**
+
+**Problem:** Generic docking engines rank poses by binding score, ignoring catalytic reality and productive geometry.
+
+**Solution:** LOXDockAudit filters and strictly scores poses based on explicit 3D geometry of the active site, turning raw docking data into auditable, catalytically interpretable results.
+
+It is intended for computational docking analysis, reproducibility checks, and control-aware interpretation of lysyl oxidase (LOX) docking screens.
 
 This project is computational only. It does not demonstrate enzymatic activity, collagen oxidation, crosslink formation, biomechanical improvement, therapeutic utility, or in vivo safety.
 
@@ -58,6 +66,14 @@ loxdockaudit run \
   --out examples/reports \
   --top-n 10
 ```
+
+Example terminal/CSV output for an active construct:
+
+| Pose_Rank | Model | Distance_A | Orientation_Deg | Fully_Productive |
+|---:|---|---:|---:|---|
+| 1 | model_1.pdb | 9.842 | 67.4 | false |
+| 2 | model_2.pdb | 7.318 | 54.9 | true |
+| 3 | model_3.pdb | 6.159 | 41.2 | true |
 
 Run the Round 5 inactive-control comparison:
 
@@ -145,6 +161,8 @@ LOXDockAudit writes:
 - Markdown reports and supplements
 - SVG distance histograms and geometry scatter plots generated with pure Python
 
+![Example of SVG distance histogram showing active vs inactive control separation](docs/assets/example_histogram.svg)
+
 ## Reproducibility Focus
 
 LOXDockAudit treats docking poses as auditable evidence:
@@ -205,3 +223,7 @@ MIT License. See [LICENSE](LICENSE).
 ## Disclaimer
 
 LOXDockAudit is research software for computational docking analysis. It is not a diagnostic, therapeutic, clinical, or wet-lab validation tool.
+
+## About & Contact
+
+Developed by Aliaksandr Karatseyeu. Open for computational biology collaborations and research internships.
